@@ -24,3 +24,17 @@ def get_args() -> argparse.Namespace:
         required=True, help="storage dir path", action="store", type=str
     )
     return parser.parse_args()
+
+
+def main():
+
+    try:
+        while True:
+            #espero conexiones de usuarios
+    except KeyboardInterrupt:
+        #Cerrar todas las conexiones
+
+
+
+if __name__ == '__main__':
+    main()
