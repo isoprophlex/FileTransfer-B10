@@ -30,9 +30,9 @@ def main():
 
     try:
         while True:
-            #espero conexiones de usuarios
+                #espero conexiones de usuarios
     except KeyboardInterrupt:
-        #Cerrar todas las conexiones
+            #Cerrar todas las conexiones
 
 
 
