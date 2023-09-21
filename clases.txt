@@ -22,9 +22,13 @@ class CustomSocket {
 
 class Message {
  - data : Bytes
+ - validation : boolean
+ - fileName : String
  + getData() : Bytes
  + getType() : MessageType
  + getOperation() : Operation
+ + getValidation() : boolean
+ + getFileName() : String
 }
 
 enum MessageType {
@@ -41,6 +45,15 @@ enum Operation {
 	- Idle
 }
 hide Operation methods
+
+class Segment {
+	- id : int
+	- data : Bytes
+	- ack : int
+	+ getId() : int
+	+ getData() : Bytes
+	+ getAck() : int
+}
 
 Message --> MessageType
 Message --> Operation
