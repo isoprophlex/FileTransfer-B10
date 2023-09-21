@@ -1,0 +1,83 @@
+class Server {
+ + run() : int
+}
+
+class Client {
+ + run() : int
+}
+
+class Protocol {
+	+ send(msg : Message) : void
+	+ recv() : Message
+}
+
+
+class CustomSocket {
+	+ CustomSocket(serverName : String, serverPort : String) : CustomSocket
+	+ CustomSocket(serverPort : String) : CustomSocket
+	+ accept() : (bytes, address)
+	+ send(bytes : Bytes) : void
+	+ recv(buffsize: int) : Bytes
+}
+
+class Message {
+ - data : Bytes
+ + getData() : Bytes
+ + getType() : MessageType
+ + getOperation() : Operation
+}
+
+enum MessageType {
+	- File
+	- Operation
+	- Validation
+	- Idle
+}
+hide MessageType methods 
+
+enum Operation {
+	- Upload
+	- Download
+	- Idle
+}
+hide Operation methods
+
+Message --> MessageType
+Message --> Operation
+
+note left of Protocol
+	Serializa/Deserializa
+	la clase Message
+end note
+
+note left of CustomSocket
+	Encapsula la conexion UDP y 
+	implementa las validaciones 
+	requeridas por el tp
+	Divide la tira de bytes en segmentos
+	* Stop and Wait
+	* Selective Repeat
+end note
+
+note right of Client
+	Inicializa un protocolo con los datos de conexion
+	Envia msg con la operacion a realizar
+	Espera validacion del servidor
+	Realiza operacion / termina en error
+end note
+
+note left of Server
+	Analizar concurrencia en la transferencia
+	Inicializa un protocolo con el puerto
+	Espera por conexion (CustomSocket::accept)
+	Lee el mensaje y valida la operacion
+	Envia la validacion
+	Realiza la operacion
+end note
+
+Client --> Protocol
+Server --> Protocol
+
+Protocol --> CustomSocket
+
+
