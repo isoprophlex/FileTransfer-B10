@@ -80,5 +80,21 @@ class ACK(Message):
 
 
 class Protocol:
+    def message_from_bytes(bytes):
+        seq_num = int(bytes[0:32])
+        type = int(bytes[32:36])
 
+        match type:
+            case 0:
+                return
+            case 1:
+                return
+            case 2: 
+                return
+            case 3:
+                return
+            case 4:
+                return
+            case default:
+                return
         # La idea es, recibir del socket y ver, si es tal tipo, hago un switch y pruebo ese tipo
