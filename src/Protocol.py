@@ -13,8 +13,8 @@ class Data (Message):
         return self.data
 
     def to_bytes(self):
-        seq_num_bytes = self.sqn_number.to_bytes(32, byteorder='big')
-        type_bytes = self.type.to_bytes(4, byteorder='big')
+        seq_num_bytes = self.sqn_number.to_bytes(4, byteorder='big')
+        type_bytes = self.type.to_bytes(1, byteorder='big')
         return seq_num_bytes + type_bytes + self.data
 
 class Start (Message):
@@ -36,11 +36,11 @@ class Start (Message):
         return self.operation_type
 
     def to_bytes(self):
-        seq_num_bytes = self.sqn_number.to_bytes(32, byteorder='big')
-        type_bytes = self.type.to_bytes(4, byteorder='big')
+        seq_num_bytes = self.sqn_number.to_bytes(4, byteorder='big')
+        type_bytes = self.type.to_bytes(1, byteorder='big')
         operation_bytes = self.operation_type.to_bytes(1)
         filename_bytes = bytes(self.filename, 'utf-8')
-        filesize_bytes = self.filesize.to_bytes(32, byteorder='big')
+        filesize_bytes = self.filesize.to_bytes(4, byteorder='big')
 
         return seq_num_bytes + type_bytes + operation_bytes + filename_bytes + filesize_bytes
 
@@ -54,9 +54,9 @@ class Error(Message):
         self.error_type = error
 
     def to_bytes(self):
-        seq_num_bytes = self.sqn_number.to_bytes(32, byteorder='big')
-        type_bytes = self.type.to_bytes(4, byteorder='big')
-        error_bytes = self.error_type.to_bytes(3, byteorder='big')
+        seq_num_bytes = self.sqn_number.to_bytes(4, byteorder='big')
+        type_bytes = self.type.to_bytes(1, byteorder='big')
+        error_bytes = self.error_type.to_bytes(1, byteorder='big')
 
         return seq_num_bytes + type_bytes + error_bytes
 
@@ -73,7 +73,7 @@ class ACK(Message):
 
     def to_bytes(self):
         seq_num_bytes = self.sqn_number.to_bytes(32, byteorder='big')
-        type_bytes = self.type.to_bytes(4, byteorder='big')
+        type_bytes = self.type.to_bytes(1, byteorder='big')
         ack_bytes = self.ack.to_bytes(1)
 
         return seq_num_bytes + type_bytes + ack_bytes
@@ -81,20 +81,20 @@ class ACK(Message):
 
 class Protocol:
     def message_from_bytes(bytes):
-        seq_num = int(bytes[0:32])
-        type = int(bytes[32:36])
+        seq_num = int(bytes[0:4])
+        type = int(bytes[4:5])
 
-        match type:
-            case 0:
-                return
-            case 1:
-                return
-            case 2: 
-                return
-            case 3:
-                return
-            case 4:
-                return
-            case default:
-                return
-        # La idea es, recibir del socket y ver, si es tal tipo, hago un switch y pruebo ese tipo
+        if type == 0:
+            filename = str(bytes[5:25])
+            filesize = int(bytes[25:29])
+            opertation_type = int(bytes[29:30])
+            return Start(seq_num, type, filename, filesize, opertation_type)
+
+        elif type == 1:
+            return Data(seq_num, type, bytes[5:])
+
+        elif type == 2:
+            return Error(seq_num, type, int(bytes[5:6]))
+
+        elif type == 3:
+            return ACK(seq_num, type, int(bytes[5:6]))
