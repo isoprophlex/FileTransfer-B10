@@ -85,9 +85,9 @@ class Protocol:
         type = int(bytes[4:5])
 
         if type == 0:
-            filename = str(bytes[5:25])
-            filesize = int(bytes[25:29])
-            opertation_type = int(bytes[29:30])
+            opertation_type = int(bytes[5:6])
+            filename = str(bytes[6:26])
+            filesize = int(bytes[26:30])
             return Start(seq_num, type, filename, filesize, opertation_type)
 
         elif type == 1:
@@ -98,3 +98,6 @@ class Protocol:
 
         elif type == 3:
             return ACK(seq_num, type, int(bytes[5:6]))
+
+        else:
+            raise Exception
