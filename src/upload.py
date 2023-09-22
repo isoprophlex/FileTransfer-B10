@@ -1,4 +1,9 @@
 import argparse
+import FileReader
+from socket import *
+
+from src.utils import get_logger
+
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -28,3 +33,19 @@ def get_args() -> argparse.Namespace:
         required=True, help="file name", action="store", type=str
     )
     return parser.parse_args()
+
+def upload(verbose, quiet, host, port, src, name):
+    logger = get_logger(verbose, quiet)
+    print("Ingrese la letra q para finalizar la subida del archivo: ")
+    client_socket = socket(AF_INET, SOCK_DGRAM)
+
+    file_name = f"{src}/{name}"
+    logger.warning("Cliente listo para subir un archivo")
+
+    reader = FileReader(file_name)
+
+    file_size = reader.get_file_size()
+    # Definir MAX_FILE_SIZE
+    if file_size > MAX_FILE_SIZE:
+        logger.error("El tamaño del archivo es muy grande")
+        return
