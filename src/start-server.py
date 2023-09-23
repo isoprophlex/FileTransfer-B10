@@ -4,7 +4,8 @@ from os import getpid, kill
 from signal import SIGKILL
 from socket import *
 from utils import *
-
+from constants import *
+from ClientManager import *
 
 
 def get_args() -> argparse.Namespace:
@@ -53,7 +54,10 @@ def start_server(args):
     logger = get_logger(args.verbose, args.quiet)
     server_socket = socket(AF_INET, SOCK_DGRAM)
     server_socket.bind((args.ADDR, args.PORT))
-    logger.warning("Servidor iniciado")
+    logger.warning("Server started...")
+    client_data, client_address = server_socket.recvfrom(BUFFER_SIZE)
+    new_connection = ClientManager(client_address, client_data,  args.verbose, args.quiet)
+    logger.info(f"Se ha conectado un nuevo cliente: {client_address}")
 
 
 if __name__ == '__main__':
