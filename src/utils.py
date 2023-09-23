@@ -11,7 +11,7 @@ def get_logger(verbose, quiet):
     """
     if verbose:
         level = logging.INFO
-    elif quiet:  # verbose anula quiet?
+    elif quiet:
         level = logging.ERROR
     else:
         level = logging.WARNING

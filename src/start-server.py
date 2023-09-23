@@ -3,9 +3,10 @@ import threading
 from os import getpid, kill
 from signal import SIGKILL
 from socket import *
-import utils
+from utils import *
 
-import click
+
+
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
@@ -31,6 +32,7 @@ def get_args() -> argparse.Namespace:
     )
     return parser.parse_args()
 
+
 def is_finishing(socket, threads, connections):
     while True:
         input_value = input()
@@ -46,34 +48,13 @@ def is_finishing(socket, threads, connections):
             break
 
 
-def main(verbose, quiet, host, port, storage):
-    logger = utils.get_logger(verbose, quiet)
-    print("Ingrese la letra q para finalizar el servidor")
+def start_server(args):
+
+    logger = get_logger(args.verbose, args.quiet)
     server_socket = socket(AF_INET, SOCK_DGRAM)
-    logger.info("Socket abierto del lado del servidor")
-    server_socket.bind((host, port))
+    server_socket.bind((args.ADDR, args.PORT))
     logger.warning("Servidor iniciado")
-    threads = []
-    connections = []
-    exit_thread = threading.Thread(
-        target=is_finishing, args=(server_socket, threads, connections)
-    )
-    exit_thread.start()
-    server_socket.setblocking(False)
-    while True:
-        try:
-            if not exit_thread.is_alive():
-                logger.info("Cerrando servidor")
-                break
-
-
-        except KeyboardInterrupt:
-    logger.info("Server cerrado")
-    pid = getpid()
-    kill(pid, SIGKILL)
-    exit_thread.join()
-
 
 
 if __name__ == '__main__':
-    main()
+    start_server(get_args())
