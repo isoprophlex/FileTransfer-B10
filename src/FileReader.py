@@ -1,7 +1,7 @@
 import os
 
 
-class FileReader:
+class FileReader(object):
     def __init__(self, file):
         self.file = None
         self.current_byte = 0

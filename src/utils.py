@@ -1,4 +1,12 @@
 import logging
+from enum import Enum
+
+
+# class syntax
+class ErrorMsg(Enum):
+    FILE_NOT_FOUND = 1
+    FILE_TOO_BIG = 2
+    # Capaz hay que agregar más
 
 
 def get_logger(verbose, quiet):
