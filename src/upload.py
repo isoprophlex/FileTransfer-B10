@@ -1,8 +1,8 @@
 import argparse
-import FileReader
+from FileReader import *
 from socket import *
-
-from src.utils import get_logger
+from constants import *
+from src.utils import *
 
 
 def get_args() -> argparse.Namespace:
@@ -34,18 +34,42 @@ def get_args() -> argparse.Namespace:
     )
     return parser.parse_args()
 
-def upload(verbose, quiet, host, port, src, name):
-    logger = get_logger(verbose, quiet)
+
+def upload(args):
+    logger = get_logger(args.verbose, args.quiet)
     print("Ingrese la letra q para finalizar la subida del archivo: ")
     client_socket = socket(AF_INET, SOCK_DGRAM)
 
-    file_name = f"{src}/{name}"
+    file_name = f"{args.FILEPATH}/{args.FILENAME}"
     logger.warning("Cliente listo para subir un archivo")
 
     reader = FileReader(file_name)
 
     file_size = reader.get_file_size()
-    # Definir MAX_FILE_SIZE
+
     if file_size > MAX_FILE_SIZE:
         logger.error("El tamaño del archivo es muy grande")
         return
+
+    hipoteticas_cosas_que_salen_de_handshake, result = handshake_upload(
+        file_name, file_size, reader, client_socket, args.ADDR, args.PORT, sel_repeat, logger
+    )
+
+    # if result is False:
+        #return
+
+    # if sel_repeeat is True:
+    #    upload_type = SelectiveRepeat()
+    #    logger.info("File is uploading with Selective Repeat protocol")
+    #else:
+    #    upload_type = StopAndWait()
+    #    logger.info("File is uploading with Stop&Wait protocol")
+
+    #upload_type.upload_file(
+     #   client_socket, hipoteticas_cosas_que_salen_de_handshake, reader, logger
+    #)
+
+#def handshake_upload(
+        #file_name, file_size, reader, client_socket, args.ADDR, args.PORT, sel_repeat, logger
+    #)
+upload(get_args())
