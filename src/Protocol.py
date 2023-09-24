@@ -2,8 +2,11 @@ class Message:
     sqn_number: int
     type: int
 
+    def get_message_type(self):
+        return self.type
 
-class Data (Message):
+
+class Data(Message):
     def __init__(self, number, type, data):
         self.sqn_number = number
         self.type = type
@@ -17,21 +20,27 @@ class Data (Message):
         type_bytes = self.type.to_bytes(1, byteorder='big')
         return seq_num_bytes + type_bytes + self.data
 
-class Start (Message):
+
+class Start(Message):
     filename: str
     filesize: int
     operation_type: bool
-    def __init__(self, number, type, filename, filesize, operation_type):
+    protocol_used: bool
+
+    def __init__(self, number, type, filename, filesize, operation_type, protocol):
         self.sqn_number = number
         self.type = type
         self.filename = filename
         self.filesize = filesize
         self.operation_type = operation_type
+        self.protocol_used = protocol
 
     def get_filename(self):
         return self.filename
+
     def get_filesize(self):
         return self.filesize
+
     def get_operation_type(self):
         return self.operation_type
 
@@ -45,9 +54,9 @@ class Start (Message):
         return seq_num_bytes + type_bytes + operation_bytes + filename_bytes + filesize_bytes
 
 
-
 class Error(Message):
     error_type: int
+
     def __init__(self, number, type, error):
         self.sqn_number = number
         self.type = type
@@ -60,14 +69,15 @@ class Error(Message):
 
         return seq_num_bytes + type_bytes + error_bytes
 
-    
 
 class ACK(Message):
     ack: bool
-    def __init__(self,number, type, value):
+
+    def __init__(self, number, type, value):
         self.sqn_number = number
         self.type = type
         self.ack = value
+
     def set_ACK(self, value):
         self.ack = value
 

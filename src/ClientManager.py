@@ -16,53 +16,56 @@ class ClientManager:
         self.file_reader = None
         self.logger = get_logger(verbose, quiet)
         self.data_received = client_data
+        self.protocol = Protocol()
 
     def connect(self):
         return threading.Thread(target=self.accept_connection)
-    def handshake(self):
-        client_message = self.data_received
 
-        client_message = client_message.decode() #
-        client_name, client_port = self.client_address
-
-        try:
-            client_file_data = client_message.split()
-            if len(client_file_data) == 5:  # the client asks for an upload
-                file_size = client_file_data[-1]
-                if int(file_size) > MAX_FILE_SIZE:
-                    socket.sendto(MAX_FILE_REACHED.encode(), (client_name, client_port))
-                    self.logger.error("El tamaño del archivo es demasiado grande")
-                    return False
-
-            operation, file_name, seq_n, gobackn = (
-                client_file_data[OPERATION],
-                client_file_data[FILE_NAME],
-                client_file_data[SEQN],
-                client_file_data[GOBACKN],
-            )
-
-            socket.sendto(ACK_SYNC.encode(), (client_name, int(client_port)))
-            return (operation, file_name, seq_n, client_name, int(client_port), gobackn)
-        except Exception as e:
-            self.logger.error(f"Handshake invalido para {client_message}: {e}")
-            return False
     def accept_connection(self):
-        # Handshake
-        if not handshake_response:
-            self.logger.error(f"No se pudo establecer la conexión con cliente: {self.client_data}")
+        handshake_result = self.handshake()
+        if not handshake_result:
+            self.logger.error(f"Handshake with: {self.client_data} client failed")
             return
-
         (
+            operation_type,
             filename,
             filesize,
-            operation
-        ) = handshake_response
+            operation,
+            client_name,
+            sqn_number,
+            client_port,
+            protocol
+        ) = handshake_result
 
         if operation == DOWNLOAD:
+                    #DOWNLOAD
 
 
         elif operation == UPLOAD:
-
+                    #UPLOAD
 
         else:
-            # Op invalida?
+            socket.sendto(str(ErrorMsg.OPERATION_NOT_FOUND).encode(), (client_name, client_port))
+            self.logger.error("The opeartion suggested is invalid.")
+
+    def handshake(self):
+        client_message = self.data_received
+        start_message = Protocol.message_from_bytes(client_message)
+        if start_message.get_message_type() != START_MESSAGE:
+            self.logger.error("Error: Wrong type of message.")
+            return False
+        filename = start_message.get_filename()
+        filesize = start_message.get_filesize()
+        try:
+            if not start_message.get_operation_type():  # the client asks for an upload
+                if int(filesize) > MAX_FILE_SIZE:
+                    socket.sendto(MAX_FILE_REACHED.encode(), self.client_address)
+                    self.logger.error("El tamaño del archivo es demasiado grande")
+                    return False
+
+            socket.sendto(ACK_SYN.encode(), (self.client_address[0], int(self.client_address[1])))
+            return start_message.get_operation_type(), filename, filesize, start_message.sqn_number, self.client_address[
+                0], self.client_address[1], start_message.protocol_used
+        except Exception as e:
+            self.logger.error(f"Handshake invalido para {client_message}: {e}")
+            return False

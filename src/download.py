@@ -3,6 +3,7 @@ import os
 import sys
 from socket import socket, AF_INET, SOCK_DGRAM, timeout
 
+
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()

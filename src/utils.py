@@ -6,6 +6,7 @@ from enum import Enum
 class ErrorMsg(Enum):
     FILE_NOT_FOUND = 1
     FILE_TOO_BIG = 2
+    OPERATION_NOT_FOUND = 3
     # Capaz hay que agregar más
 
 
