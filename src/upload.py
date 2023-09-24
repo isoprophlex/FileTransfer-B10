@@ -1,9 +1,9 @@
 import argparse
 from FileReader import *
 from socket import *
-from constants import *
+from Intro.src.lib.constants import *
 from src.utils import *
-
+from lib.constants import *
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()

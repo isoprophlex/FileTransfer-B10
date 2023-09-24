@@ -4,8 +4,8 @@ from FileReader import FileReader
 # Habría que importar Selective Repeat y Stop and Wait
 from utils import *
 from Protocol import Protocol
-from constants import *
-
+from Intro.src.lib.constants import *
+from lib.exceptions import *
 
 class ClientManager:
     socket: socket

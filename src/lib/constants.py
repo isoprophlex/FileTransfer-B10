@@ -10,3 +10,6 @@ ACK_SYN = 1
 #Protocol
 SELECTIVE_REPEAT = 1
 STOP_AND_WAIT = 0
+
+# Cuanto tiempo en segundos usamos de timeout
+TIMEOUT = 2
