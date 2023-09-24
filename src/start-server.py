@@ -50,14 +50,17 @@ def is_finishing(socket, threads, connections):
 
 
 def start_server(args):
+    while True:
+        logger = get_logger(args.verbose, args.quiet)
+        server_socket = socket(AF_INET, SOCK_DGRAM)
+        server_socket.bind((args.ADDR, args.PORT))
+        logger.warning("Server started...")
+        client_data, client_address = server_socket.recvfrom(BUFFER_SIZE)
+        print(client_data)
+        new_connection = ClientManager(client_address, client_data, args.verbose, args.quiet, args.FILEPATH)
+        new_connection.accept_connection()
+        logger.warning(f"Se ha conectado un nuevo cliente: {client_address}")
 
-    logger = get_logger(args.verbose, args.quiet)
-    server_socket = socket(AF_INET, SOCK_DGRAM)
-    server_socket.bind((args.ADDR, args.PORT))
-    logger.warning("Server started...")
-    client_data, client_address = server_socket.recvfrom(BUFFER_SIZE)
-    new_connection = ClientManager(client_address, client_data,  args.verbose, args.quiet)
-    logger.info(f"Se ha conectado un nuevo cliente: {client_address}")
 
 
 if __name__ == '__main__':

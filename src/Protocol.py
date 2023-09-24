@@ -95,10 +95,11 @@ class Protocol:
         type = int(bytes[4:5])
 
         if type == 0:
-            opertation_type = int(bytes[5:6])
+            operation_type = int(bytes[5:6])
             filename = str(bytes[6:26])
             filesize = int(bytes[26:30])
-            return Start(seq_num, type, filename, filesize, opertation_type)
+            protocol = int(bytes[30:32])
+            return Start(seq_num, type, filename, filesize, operation_type, protocol)
 
         elif type == 1:
             return Data(seq_num, type, bytes[5:])
