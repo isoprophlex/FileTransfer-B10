@@ -55,10 +55,10 @@ def get_args() -> argparse.Namespace:
 
 def handshake_upload(file_name, file_size, reader, client_socket, address, port, sel_repeat, logger):
     # 5 bytes para el file size
-    file_size = "0" * (5 - len(str(file_size))) + str(file_size)
+    file_size = "}" * (5 - len(str(file_size))) + str(file_size)
     # 20 bytes para el filename
     file_name = file_name.split("/")[-1]
-    file_name = "0" * (20 - len(str(file_name))) + str(file_name)
+    file_name = "}" * (20 - len(str(file_name))) + str(file_name)
     # Arrancamos los numeros de secuencia con 00000
     initial_seqn = "0" * SEQN_LENGTH
     header = f"{initial_seqn}{START}{UPLOAD}{file_name}{file_size}{sel_repeat}"
@@ -125,6 +125,7 @@ def upload(args):
     else:
         upload_type = StopAndWait()
         logger.info("Se usará el protocolo Stop&Wait")
+    upload_type.upload_file(client_socket, server_info[0], server_info[1], reader, logger)
 
 
 def check_protocol(selected_repeat):

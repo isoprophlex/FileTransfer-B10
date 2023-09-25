@@ -14,15 +14,15 @@ class FileReader(object):
         
         """
         if self.file is None:
-            self.file = open(self.file_name, "rb")
+            self.file = open(self.file_name, "b+r")
         if self.file != "File closed":
-            readed = self.file.read(size)
+            read = self.file.read(size)
             self.current_byte += size
-            return readed
+            return read
 
     def write_file(self, buffer):
         if self.file is None:
-            self.file = open(self.file_name, "wb")
+            self.file = open(self.file_name, "bw+")
         if self.file != "File closed":
             written = self.file.write(buffer)
             return written

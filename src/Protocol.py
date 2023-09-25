@@ -30,7 +30,7 @@ class Start(Message):
     def __init__(self, number, type, filename, filesize, operation_type, protocol):
         self.sqn_number = number
         self.type = type
-        self.filename = filename
+        self.filename = str(filename.replace("}", ""))
         self.filesize = filesize
         self.operation_type = operation_type
         self.protocol_used = protocol

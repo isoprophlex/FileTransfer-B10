@@ -4,219 +4,105 @@ from constants import *
 from FileReader import *
 
 
+# Envío de datos desde el emisor:
+
+# El emisor tiene datos que desea enviar al receptor.
+# El emisor coloca los datos en un paquete y lo envía al receptor a través del canal de comunicación (que puede ser una red cableada o inalámbrica).
+
+# Espera del ACK en el emisor:
+#
+# Después de enviar un paquete, el emisor entra en un estado de espera.
+# Espera una confirmación (ACK) del receptor que indica que los datos se han recibido correctamente.
+
 class StopAndWait():
-
     def upload_file(self, socket, host, port, reader, logger):
-
-        current_seqn = 1
-        timeout_counter = 0
-
+        amount_timeouts = 0
+        actual_sqn = 0
         try:
-            readed_bytes = reader.read_file(STD_PACKET_SIZE)
+            while True:
+                sqn_to_send = "0" * (SEQN_LENGTH - len(str(actual_sqn))) + str(actual_sqn)
+                data_chunk = sqn_to_send.encode()
+                bytes_read = (reader.read_file(STD_PACKET_SIZE))
+
+                if not bytes_read or bytes_read == b'':
+                    break  # Fin del archivo
+                data_chunk += bytes_read
+                self.send_packet(socket, host, port, data_chunk, logger)
+                # Esperar el ACK del servidor
+                ack_received = self.wait_for_ack(socket, logger)
+                if not ack_received:
+                    amount_timeouts += 1
+                    logger.error(f"Timeout number: {amount_timeouts} occurred")
+                    if amount_timeouts == MAX_TIMEOUTS:
+                        logger.error(
+                            f"Maximum amount of timeouts reached: ({MAX_TIMEOUTS}). Closing connection.")
+                        break
+                else:
+                    amount_timeouts = 0
+
         except:
-            logger.error("Error al leer el archivo")
-            return "Error"
+            logger.error("Error durante la transmisión")
+            return
 
-        while readed_bytes is not None and readed_bytes != b"":
-
-            # Rellenar seqn
-            seqn = "0" * (5 - len(str(current_seqn))) + str(current_seqn)
-
-            bytes = f"{seqn} ".encode()
-
-            bytes += readed_bytes
-
-            try:
-                socket.sendto(bytes, (host, port))
-            except:
-                return
-
-            logger.info(f"Seqn {current_seqn} enviado a {host}:{port}")
-
-            try:
-                socket.settimeout(TIMEOUT_SECONDS)
-            except:
-                return
-
-            try:
-                buffer = socket.recv(HANDSHAKE_SIZE)
-                if buffer.decode()[:3] == "ACK":
-                    timeout_counter = 0
-            except timeout:
-
-                timeout_counter += 1
-                if timeout_counter == MAX_TIMEOUTS_SAW:
-                    logger.error(f"Se cerró la conexión con {host}:{port}")
-                    return "Error"
-                logger.error(f"Timeout en seqn {current_seqn}")
-                continue
-
-            except:
-                return
-
-            decoded_buffer = buffer.decode()
-
-            while decoded_buffer != "ACK " + str(
-                current_seqn
-            ) and decoded_buffer != "ACK " + str(MAX_SEQ_NUMBER):
-                bytes = f"{seqn} ".encode()
-                bytes += readed_bytes
-
-                try:
-                    socket.sendto(bytes, (host, port))
-                    socket.settimeout(TIMEOUT_SECONDS)
-                except:
-                    return "Error"
-
-                try:
-                    # Aca esperamos ACK
-                    buffer = socket.recv(HANDSHAKE_SIZE)
-                    if buffer.decode()[:3] == "ACK":
-                        timeout_counter = 0
-                except timeout:
-                    timeout_counter += 1
-                    if timeout_counter == MAX_TIMEOUTS_SAW:
-                        logger.error(f"Se cerró la conexión con {host}:{port}")
-                        return "Error"
-                    logger.error(f"Timeout en seqn {current_seqn}")
-                    continue
-                except:
-                    return "Error"
-
-                decoded_buffer = buffer.decode()
-
-            current_seqn += 1
-
-            # Si sobrepasa length maximo
-            if len(str(current_seqn)) > SEQN_LENGTH:
-                current_seqn = 0
-
-            # Si la respuesta es "OK" entonces se sigue leyendo el archivo:
-            readed_bytes = reader.read_file(STD_PACKET_SIZE)
-            if readed_bytes is None:
-                return "Error"
-
-        logger.info("Cerrando conexión con servidor...")
-
-        try:
-            socket.settimeout(TIMEOUT_SECONDS)
-        except:
-            return "Error"
-
-        while True:
-            try:
-                socket.sendto("FIN".encode(), (host, port))
-                buffer = socket.recv(BUFFER_SIZE)
-            except timeout:
-                timeout_counter += 1
-                if timeout_counter == MAX_TIMEOUTS_SAW:
-                    logger.error(f"Se cerró la conexión con {host}:{port}")
-                    return "Error"
-                logger.error(f"Timeout en seqn {current_seqn}")
-                continue
-            except:
-                return "Error"
-
-            if buffer.decode() == "ACK FIN":
-                break
-
-        try:
-            reader.close_file()
+        finally:
             socket.close()
+
+    def send_packet(self, socket, host, port, data, logger):
+        try:
+            socket.sendto(data, (host, port))
+            logger.info(f"Sending {len(data)} bytes.")
+        except Exception as e:
+            logger.error(f"Error sending packet: {data[0:4]}")
+
+    def wait_for_ack(self, socket, logger):
+        try:
+            socket.settimeout(TIMEOUT_SECONDS)  # Establecer un tiempo de espera para el ACK (5 segundos)
+            ack = socket.recv(ACK_SIZE)
+            logger.info(f"Recibido ACK: {ack[0:4].decode()}")
+            return True
+        except socket.timeout:
+            return False
+
+    def download_file(self, socket, host, port, writer, seq_n, logger):
+        amount_timeouts = 0
+        try:
+            while True:
+                data_chunk = self.receive_packet(socket, logger)
+                if data_chunk is None:
+                    amount_timeouts += 1
+                    logger.error(f"Timeout number {amount_timeouts}!")
+                    if amount_timeouts >= MAX_TIMEOUTS:
+                        logger.error(f"Maximum amount of timeouts reached: ({MAX_TIMEOUTS}). Closing connection.")
+                        break
+                else:
+                    amount_timeouts = 0
+                    writer.write_file(data_chunk[SEQN_LENGTH:])
+                    sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
+                    self.send_ack(socket, host, port, sqn_to_send, logger)
+                    seq_n += 1
+
         except:
-            pass
-        logger.info(f"Socket de upload cerrado en conexión con {host}:{port}")
-        return "Ok"
+            logger.error("Error durante la descarga")
 
-    def download_file(
-        self, socket, serverName, serverPort, writer: FileReader, seq_n, logger
-    ):
-        timeout_counter = 0
-
-        try:
-            current_seqn = int(seq_n)  # El que recibí último
-        except ValueError:
-            logger.error("No se pudo convertir seq_n a entero")
-            return "Error"
-
-        while True:
-
-            try:
-                socket.settimeout(TIMEOUT_SECONDS)
-            except:
-                return "Error"
-
-            try:
-                buffer = socket.recv(BUFFER_SIZE)
-                timeout_counter = 0
-                logger.info(
-                    f"Seqn {current_seqn} recibido de {serverName}:{serverPort}"
-                )
-                if buffer.decode() == FIN:
-                    break
-            except UnicodeDecodeError:
-                pass
-            except timeout:
-                timeout_counter += 1
-                if timeout_counter == MAX_TIMEOUTS_SAW:
-                    logger.error(f"Se cerró la conexión con {serverName}:{serverPort}")
-                    return "Error"
-                logger.error(f"Timeout en seqn {current_seqn}")
-                continue
-            except:
-                return "Error"
-
-            seqn = buffer[:5].decode()
-            data = buffer[6:]  # 6 porque hay un espacio despues del seqn
-
-            try:
-                seqn = int(seqn)
-            except ValueError:
-                logger.error(
-                    f"No se pudo convertir seqn a entero en conexión con {serverName}:{serverPort}"
-                )
-                continue
-
-            if seqn != current_seqn + 1 and current_seqn != MAX_SEQ_NUMBER:
-                # Envío el último que tengo
-                try:
-                    socket.sendto(
-                        f"ACK {current_seqn}".encode(), (serverName, serverPort)
-                    )
-                except:
-                    return "Error"
-
-                continue
-
-            current_seqn += 1
-
-            # Si sobrepasa length maximo
-            if len(str(current_seqn)) > SEQN_LENGTH:
-                current_seqn = 0
-
-            # Si sale OK se envía ACK del que recibí
-            try:
-                socket.sendto(f"ACK {current_seqn}".encode(), (serverName, serverPort))
-            except:
-                return "Error"
-
-            written_bytes = writer.write_file(data)
-            if written_bytes is None:
-                return "Error"
-
-            while written_bytes < len(data):
-                written_bytes += writer.write_file(data[written_bytes:])
-                if written_bytes is None:
-                    return "Error"
-
-        logger.info("Cerrando conexion con servidor...")
-
-        try:
-            socket.sendto(ACK_FIN.encode(), (serverName, serverPort))
-            writer.close_file()
+        finally:
             socket.close()
-        except:
-            pass
 
-        logger.info("Socket de download cerrado")
-        return "Ok"
+    def receive_packet(self, socket, logger):
+        try:
+            socket.settimeout(TIMEOUT_SECONDS)  # Establecer un tiempo de espera para el paquete (5 segundos)
+            data_chunk = socket.recv(STD_PACKET_SIZE + 5)
+            logger.info(f"Packet of {len(data_chunk)} bytes received.")
+            return data_chunk
+        except socket.timeout:
+            return None
+        except Exception as e:
+            logger.error("Error receiving packet")
+            return None
+
+    def send_ack(self, socket, host, port, seq_n, logger):
+        try:
+            ack_message = f"{seq_n}{ACK}"
+            socket.sendto(ack_message.encode(), (host, port))
+            logger.info(f"Sending ACK: {seq_n}")
+        except:
+            logger.error(f"Error sending ACK")
