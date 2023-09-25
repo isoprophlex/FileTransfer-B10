@@ -59,6 +59,7 @@ def start_server(args):
         # print(client_data)
         new_connection = ClientManager(client_address, client_data.decode(), args.verbose, args.quiet, args.FILEPATH)
         new_connection.accept_connection()
+        new_connection.close_file_reader()
         logger.warning(f"Se ha conectado un nuevo cliente: {client_address}")
 
 

@@ -25,6 +25,9 @@ class StopAndWait():
                 bytes_read = (reader.read_file(STD_PACKET_SIZE))
 
                 if not bytes_read or bytes_read == b'':
+                    end_chunk = f"{sqn_to_send}{ACK_FIN}"
+                    self.send_packet(socket, host, port, end_chunk.encode(), logger)
+                    ack_received = self.wait_for_ack(socket, logger)
                     break  # Fin del archivo
                 data_chunk += bytes_read
                 self.send_packet(socket, host, port, data_chunk, logger)
@@ -68,6 +71,10 @@ class StopAndWait():
         try:
             while True:
                 data_chunk = self.receive_packet(socket, logger)
+                if len(data_chunk) == 5 and data_chunk.decode().endswith("6"):
+                    sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
+                    self.send_ack(socket, host, port, sqn_to_send, logger, False)
+                    break
                 if data_chunk is None:
                     amount_timeouts += 1
                     logger.error(f"Timeout number {amount_timeouts}!")
@@ -78,13 +85,14 @@ class StopAndWait():
                     amount_timeouts = 0
                     writer.write_file(data_chunk[SEQN_LENGTH:])
                     sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
-                    self.send_ack(socket, host, port, sqn_to_send, logger)
+                    self.send_ack(socket, host, port, sqn_to_send, logger, True)
                     seq_n += 1
 
         except:
             logger.error("Error durante la descarga")
 
         finally:
+            logger.info("Upload done succesfully!")
             socket.close()
 
     def receive_packet(self, socket, logger):
@@ -99,10 +107,18 @@ class StopAndWait():
             logger.error("Error receiving packet")
             return None
 
-    def send_ack(self, socket, host, port, seq_n, logger):
-        try:
-            ack_message = f"{seq_n}{ACK}"
-            socket.sendto(ack_message.encode(), (host, port))
-            logger.info(f"Sending ACK: {seq_n}")
-        except:
-            logger.error(f"Error sending ACK")
+    def send_ack(self, socket, host, port, seq_n, logger, is_FIN):
+        if not is_FIN:
+            try:
+                ack_message = f"{seq_n}{ACK}"
+                socket.sendto(ack_message.encode(), (host, port))
+                logger.info(f"Sending ACK: {seq_n}")
+            except:
+                logger.error(f"Error sending ACK")
+        else:
+            try:
+                ack_message = f"{seq_n}{ACK_FIN}"
+                socket.sendto(ack_message.encode(), (host, port))
+                logger.info(f"Sending ACK FIN: {seq_n}")
+            except:
+                logger.error(f"Error sending ACK")

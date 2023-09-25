@@ -54,8 +54,8 @@ def get_args() -> argparse.Namespace:
 
 
 def handshake_upload(file_name, file_size, reader, client_socket, address, port, sel_repeat, logger):
-    # 5 bytes para el file size
-    file_size = "}" * (5 - len(str(file_size))) + str(file_size)
+    # 20 bytes para el file size
+    file_size = "}" * (20 - len(str(file_size))) + str(file_size)
     # 20 bytes para el filename
     file_name = file_name.split("/")[-1]
     file_name = "}" * (20 - len(str(file_name))) + str(file_name)
