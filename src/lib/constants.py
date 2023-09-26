@@ -13,3 +13,5 @@ STOP_AND_WAIT = 0
 
 # Cuanto tiempo en segundos usamos de timeout
 TIMEOUT = 2
+
+MAX_PACKET_SIZE = ((64*1024)+1) #64kB

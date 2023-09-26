@@ -1,10 +1,27 @@
+class InvalidMessageType(Exception):
+    pass
+
 class Message:
     sqn_number: int
     type: int
 
     def get_message_type(self):
         return self.type
-
+    
+    @classmethod
+    def read(cls, value : bytes):
+        # El header 0 contiene el tipo de mensaje
+        _type = value[0]
+        if _type == Data.type:
+            return Data.read(value)
+        if _type == Start.type:
+            return Start.read(value)
+        if _type == Error.type:
+            return Error.read(value)
+        if _type == ACK.type:
+            return ACK.read(value)
+        #Si llegue hasta aca es porque no tengo idea que me llego
+        raise InvalidMessageType("Invalid message type.")
 
 class Data(Message):
     def __init__(self, number, type, data):

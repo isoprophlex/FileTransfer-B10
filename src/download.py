@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 from socket import socket, AF_INET, SOCK_DGRAM, timeout
-
+from lib.logger import *
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -28,3 +28,6 @@ def get_args() -> argparse.Namespace:
                         action="store", type=str)
     return parser.parse_args()
 
+if __name__ == "__main__":
+    args = get_args()
+    logger.set_level_args(args.quiet, args.verbose)

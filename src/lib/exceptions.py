@@ -1,3 +1,5 @@
+import os
+
 class InvalidPort(Exception):
     def __init__(self):
         #TODO: CAMBIAR AL LOGGER.ERROR
@@ -9,8 +11,7 @@ class InvalidPort(Exception):
 class DirectoryNotFound(Exception):
     def __init__(self):
         #TODO: CAMBIAR AL LOGGER.ERROR
-        print('ERROR - El directorio ingresado para \
-                     almacenar los archivos no existe')
+        print('ERROR - El directorio ingresado para almacenar los archivos no existe')
 
 
 def validate_port(port):
@@ -24,3 +25,6 @@ def validate_port(port):
 def validate_directory(directory):
     if not os.path.exists(directory):
         raise DirectoryNotFound()
+    
+class InvalidMessageType(Exception):
+    pass
