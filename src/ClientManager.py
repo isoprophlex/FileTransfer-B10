@@ -46,6 +46,12 @@ class ClientManager:
             self.download_file(
                 download_type, filename, client_name, client_port, seq_num
             )
+        elif operation_type == DOWNLOAD:
+            self.logger.info(f"Server preparado enviar archivo a {client_name}")
+            upload_type = self.use_protocol(protocol)
+            self.upload_file(
+                upload_type, filename, client_name, client_port, seq_num
+            )
         else:
             socket.sendto(str(ErrorMsg.OPERATION_NOT_FOUND).encode(), (client_name, client_port))
             self.logger.error("The operation suggested is invalid.")
@@ -59,8 +65,8 @@ class ClientManager:
         filename = start_message.get_filename()
         filesize = start_message.get_filesize()
         try:
-            if not start_message.get_operation_type():  # the client asks for an upload
-                if int(filesize) > MAX_FILE_SIZE:
+            if start_message.get_operation_type():  # the client asks for an upload
+                if start_message.get_operation_type() == UPLOAD & int(filesize) > MAX_FILE_SIZE:
                     socket.sendto(MAX_FILE_REACHED.encode(), self.client_address)
                     self.logger.error("File too big")
                     return False
@@ -86,6 +92,16 @@ class ClientManager:
         self.file_reader = FileReader(os.path.join(self.storage, file_name))
         code = protocol.download_file(
             self.socket, client_name, client_port, self.file_reader, seq_n, self.logger
+        )
+        if code == str(ERROR):
+            self.close_file_reader()
+            return
+
+    
+    def upload_file(self, protocol, file_name, client_name, client_port, seq_n):
+        self.file_reader = FileReader(os.path.join(self.storage, file_name))
+        code = protocol.upload_file(
+            self.socket, client_name, client_port, self.file_reader, self.logger
         )
         if code == str(ERROR):
             self.close_file_reader()

@@ -91,15 +91,22 @@ class ACK(Message):
 
 class Protocol:
     def message_from_bytes(bytes):
+        
         seq_num = int(bytes[0:4])
         type = int(bytes[4:5])
 
         if type == 0:
             operation_type = int(bytes[5:6])
-            filename = str(bytes[6:26])
-            filesize = int(bytes[26:46].replace("}", ""))
-            protocol = int(bytes[46:])
-            return Start(seq_num, type, filename, str(filesize), operation_type, protocol)
+            if operation_type == 1:
+                filename = str(bytes[6:26])
+                filesize = int(bytes[26:46].replace("}", ""))
+                protocol = int(bytes[46:])
+                return Start(seq_num, type, filename, str(filesize), operation_type, protocol)
+            else:
+                filename = str(bytes[6:26])
+                protocol = int(bytes[26:])
+                return Start(seq_num, type, filename, 0, operation_type, protocol)
+
 
         elif type == 1:
             return Data(seq_num, type, bytes[5:])

@@ -1,7 +1,7 @@
 import argparse
 import threading
 from os import getpid, kill
-from signal import SIGKILL
+# from signal import SIGKILL
 from socket import *
 from utils import *
 from constants import *
@@ -56,7 +56,7 @@ def start_server(args):
         server_socket.bind((args.ADDR, args.PORT))
         logger.warning("Server started...")
         client_data, client_address = server_socket.recvfrom(BUFFER_SIZE)
-        # print(client_data)
+        logger.warning(f"client_data: {client_data} - client_address: {client_address}")
         new_connection = ClientManager(client_address, client_data.decode(), args.verbose, args.quiet, args.FILEPATH)
         new_connection.accept_connection()
         new_connection.close_file_reader()
