@@ -15,14 +15,21 @@ from FileReader import *
 # Espera una confirmación (ACK) del receptor que indica que los datos se han recibido correctamente.
 
 class StopAndWait():
+    def __init__(self):
+        self.TIMEOUT_SECONDS = 3
+        self.MAX_TIMEOUTS = 10
+
     def upload_file(self, socket, host, port, reader, logger):
         amount_timeouts = 0
         actual_sqn = 0
+        previous_sqn = -1
+        bytes_read = ""
         try:
             while True:
                 sqn_to_send = "0" * (SEQN_LENGTH - len(str(actual_sqn))) + str(actual_sqn)
                 data_chunk = sqn_to_send.encode()
-                bytes_read = (reader.read_file(STD_PACKET_SIZE))
+                if actual_sqn > previous_sqn:
+                    bytes_read = (reader.read_file(STD_PACKET_SIZE))
 
                 if not bytes_read or bytes_read == b'':
                     end_chunk = f"{sqn_to_send}{ACK_FIN}"
@@ -36,12 +43,14 @@ class StopAndWait():
                 if not ack_received:
                     amount_timeouts += 1
                     logger.error(f"Timeout number: {amount_timeouts} occurred")
-                    if amount_timeouts == MAX_TIMEOUTS:
+                    if amount_timeouts == self.MAX_TIMEOUTS:
                         logger.error(
-                            f"Maximum amount of timeouts reached: ({MAX_TIMEOUTS}). Closing connection.")
+                            f"Maximum amount of timeouts reached: ({self.MAX_TIMEOUTS}). Closing connection.")
                         break
                 else:
                     amount_timeouts = 0
+                    previous_sqn = actual_sqn
+                    actual_sqn += 1
 
         except:
             logger.error("Error durante la transmisión")
