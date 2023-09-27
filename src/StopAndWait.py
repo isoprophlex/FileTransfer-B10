@@ -23,7 +23,6 @@ class StopAndWait():
                 data_chunk = sqn_to_send.encode()
                 if actual_sqn == previous_sqn + 1:
                     bytes_read = (reader.read_file(STD_PACKET_SIZE))
-
                 if not bytes_read or bytes_read == b'':
                     end_chunk = f"{sqn_to_send}{ACK_FIN}"
                     self.send_packet(socket, host, port, end_chunk.encode(), logger)
@@ -65,7 +64,7 @@ class StopAndWait():
             socket.settimeout(self.TIMEOUT_SECONDS)
             random = randint(1, 10)
             if random % 2 == 0:
-                sleep(3)
+                sleep(6)
             ack = socket.recv(ACK_SIZE)
             logger.info(f"Recibido ACK: {ack[0:4].decode()}")
             return True
@@ -74,12 +73,16 @@ class StopAndWait():
 
     def download_file(self, socket, host, port, writer, seq_n, logger):
         amount_timeouts = 0
-        previous_seqn = 0
         previous_chunk = ""
         while True:
             try:
                 data_chunk = self.receive_packet(socket, logger)
             except:
+                amount_timeouts += 1
+                logger.error(f"Timeout number {amount_timeouts}!")
+                if amount_timeouts >= self.MAX_TIMEOUTS:
+                    logger.error(f"Maximum amount of timeouts reached: ({MAX_TIMEOUTS}). Closing connection.")
+                    break
                 continue
             if data_chunk == previous_chunk:  # Me llegó de nuevo el mismo paquete
                 sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
