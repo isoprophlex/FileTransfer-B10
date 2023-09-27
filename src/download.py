@@ -5,6 +5,7 @@ from FileReader import *
 from socket import *
 from constants import *
 from StopAndWait import *
+from SelectiveRepeat import *
 from utils import *
 
 
@@ -106,7 +107,7 @@ def download(args):
         return
 
     if args.SELECT_REPEAT is True:
-        # upload_type = Selective_Repeat()
+        download_type = Selective_Repeat()
         logger.info("Se usará el protocolo Selective Repeat")
     else:
         download_type = StopAndWait()

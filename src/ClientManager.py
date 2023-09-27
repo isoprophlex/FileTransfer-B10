@@ -6,6 +6,7 @@ from utils import *
 from Protocol import Protocol
 from constants import *
 from StopAndWait import *
+from SelectiveRepeat import *
 
 
 class ClientManager:
@@ -81,10 +82,9 @@ class ClientManager:
     def use_protocol(self, protocol):
         selected = StopAndWait()
         if protocol == "True":
-            # selected = Selective_Repeat()
+            selected = Selective_Repeat()
             self.logger.info("Se usará el protocolo Selective Repeat")
         else:
-            selected = StopAndWait()
             self.logger.info("Se usará el protocolo Stop&Wait")
         return selected
 
