@@ -2,7 +2,9 @@ import argparse
 import time
 
 from FileReader import *
-from socket import *
+from socket import socket
+from socket import SOCK_DGRAM, AF_INET
+from socket import timeout
 from constants import *
 from StopAndWait import *
 from utils import *
