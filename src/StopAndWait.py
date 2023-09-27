@@ -76,41 +76,38 @@ class StopAndWait():
         amount_timeouts = 0
         previous_seqn = 0
         previous_chunk = ""
-        try:
-            while True:
+        while True:
+            try:
                 data_chunk = self.receive_packet(socket, logger)
-                if data_chunk == previous_chunk:  # Me llegó de nuevo el mismo paquete
-                    sqn_to_send = "0" * (SEQN_LENGTH - len(str(previous_seqn))) + str(previous_seqn)
-                    self.send_ack(socket, host, port, sqn_to_send, logger, False)
-                if len(data_chunk) == 5 and data_chunk.decode().endswith("6"):
-                    sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
-                    self.send_ack(socket, host, port, sqn_to_send, logger, True)
+            except:
+                continue
+            if data_chunk == previous_chunk:  # Me llegó de nuevo el mismo paquete
+                sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
+                self.send_ack(socket, host, port, sqn_to_send, logger, False)
+            if len(data_chunk) == 5 and data_chunk.decode().endswith("6"):
+                sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
+                self.send_ack(socket, host, port, sqn_to_send, logger, True)
+                break
+            if data_chunk is None:
+                amount_timeouts += 1
+                logger.error(f"Timeout number {amount_timeouts}!")
+                if amount_timeouts >= self.MAX_TIMEOUTS:
+                    logger.error(f"Maximum amount of timeouts reached: ({MAX_TIMEOUTS}). Closing connection.")
                     break
-                if data_chunk is None:
-                    amount_timeouts += 1
-                    logger.error(f"Timeout number {amount_timeouts}!")
-                    if amount_timeouts >= self.MAX_TIMEOUTS:
-                        logger.error(f"Maximum amount of timeouts reached: ({MAX_TIMEOUTS}). Closing connection.")
-                        break
-                elif data_chunk != previous_chunk:
-                    amount_timeouts = 0
-                    sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
-                    self.send_ack(socket, host, port, sqn_to_send, logger, False)
-                    try:
-                        writer.write_file(data_chunk[SEQN_LENGTH:])
-                    except:
-                        logger.error("Error writing file")
-                        break
-                    previous_chunk = data_chunk
-                    previous_seqn = seq_n
-                    seq_n += 1
-
-        except:
-            logger.error("Error durante la descarga")
-
-        finally:
-            logger.info("Upload done succesfully!")
-            socket.close()
+            elif data_chunk != previous_chunk:
+                amount_timeouts = 0
+                sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
+                self.send_ack(socket, host, port, sqn_to_send, logger, False)
+                try:
+                    writer.write_file(data_chunk[SEQN_LENGTH:])
+                except:
+                    logger.error("Error writing file")
+                    break
+                previous_chunk = data_chunk
+                previous_seqn = seq_n
+                seq_n += 1
+        logger.info("Upload done succesfully!")
+        socket.close()
 
     def receive_packet(self, socket, logger):
         try:
