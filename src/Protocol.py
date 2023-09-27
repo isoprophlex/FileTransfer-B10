@@ -51,6 +51,12 @@ class Start(Message):
         self.filesize = filesize
         self.operation_type = operation_type
 
+    def write(self) -> bytes:
+        return  self.type.to_bytes(1, 'big') + \
+                self.sqn_number.to_bytes(4, 'big') + \
+                self.operation_type.to_bytes(1, 'big') + \
+                self.filesize.to_bytes(4, 'big') + \
+                self.filename.encode('utf8')
     def get_filename(self):
         return self.filename
 

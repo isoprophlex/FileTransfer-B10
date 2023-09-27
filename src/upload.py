@@ -53,9 +53,10 @@ def upload(args):
         logger.error("El tamaño del archivo es muy grande")
         return
 
-    hipoteticas_cosas_que_salen_de_handshake, result = handshake_upload(
-        file_name, file_size, reader, client_socket, args.ADDR, args.PORT, sel_repeat, logger
-    )
+    #TODO: NO SÉ QUE ES ESTO
+    #hipoteticas_cosas_que_salen_de_handshake, result = handshake_upload(
+    #    file_name, file_size, reader, client_socket, args.ADDR, args.PORT, sel_repeat, logger
+    #)
 
     # if result is False:
         #return
@@ -91,7 +92,7 @@ if __name__ == "__main__":
         logger.error("Tamaño de archivo invalido. Tamaño maximo de 4Gb.")
         skt.close()
         sys.exit(1)
-    packet = Start(UPLOAD, size, args.FILENAME)
+    packet = Start(UPLOAD, size, args.FILENAME).write()
     packet = generate_checksum(packet)
     #send(packet)
     try:
