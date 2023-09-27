@@ -129,8 +129,8 @@ def upload(args):
 
 
 def check_protocol(selected_repeat):
-    if selected_repeat is True:
-        return SELECTIVE_REPEAT
+    # if selected_repeat is True:
+        #return SELECTIVE_REPEAT
     return STOP_AND_WAIT
 
 
