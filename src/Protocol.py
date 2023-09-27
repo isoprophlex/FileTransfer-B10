@@ -44,13 +44,12 @@ class Start(Message):
     operation_type: bool
     protocol_used: bool
 
-    def __init__(self, number, type, filename, filesize, operation_type, protocol):
-        self.sqn_number = number
-        self.type = type
+    def __init__(self, operation_type, filesize, filename):
+        self.sqn_number = 0
+        self.type = operation_type
         self.filename = filename
         self.filesize = filesize
         self.operation_type = operation_type
-        self.protocol_used = protocol
 
     def get_filename(self):
         return self.filename
