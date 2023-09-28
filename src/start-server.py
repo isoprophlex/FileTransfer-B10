@@ -1,5 +1,5 @@
 import argparse
-import threading
+from multiprocessing import Process
 from os import getpid, kill
 # from signal import SIGKILL
 from socket import *
@@ -49,18 +49,28 @@ def is_finishing(socket, threads, connections):
             break
 
 
-def start_server(args):
-    while True:
-        logger = get_logger(args.verbose, args.quiet)
-        server_socket = socket(AF_INET, SOCK_DGRAM)
-        server_socket.bind((args.ADDR, args.PORT))
-        logger.warning("Server started...")
-        client_data, client_address = server_socket.recvfrom(BUFFER_SIZE)
-        logger.warning(f"client_data: {client_data} - client_address: {client_address}")
-        new_connection = ClientManager(client_address, client_data.decode(), args.verbose, args.quiet, args.FILEPATH)
-        new_connection.accept_connection()
-        new_connection.close_file_reader()
-        logger.warning(f"Se ha conectado un nuevo cliente: {client_address}")
+def handle_client(client_address, client_data, args):
+    new_connection = ClientManager(client_address, client_data.decode(), args.verbose, args.quiet, args.FILEPATH)
+    new_connection.accept_connection()
+    new_connection.close_file_reader()
+
+def start_server(serve_args):
+    proccesses = []
+    logger = get_logger(serve_args.verbose, serve_args.quiet)
+    logger.warning("Server started...")
+    server_socket = socket(AF_INET, SOCK_DGRAM)
+    server_socket.bind((serve_args.ADDR, serve_args.PORT))
+    try:
+        while True:
+            client_data, client_address = server_socket.recvfrom(BUFFER_SIZE)
+            logger.warning(f"client_data: {client_data} - client_address: {client_address}")
+            new_process = Process(target=handle_client, args=(client_address, client_data, serve_args))
+            new_process.start()
+            proccesses.append(new_process)
+            logger.warning(f"Se ha conectado un nuevo cliente: {client_address}")
+    except KeyboardInterrupt:
+        for proccess in proccesses:
+            proccess.join()
 
 
 if __name__ == '__main__':
