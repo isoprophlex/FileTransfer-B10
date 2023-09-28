@@ -59,6 +59,7 @@ class ClientManager:
 
     def handshake(self):
         client_message = self.data_received
+        self.logger.info(f"handshake client_message {client_message}")
         start_message = Protocol.message_from_bytes(client_message)
         if start_message.get_message_type() != START_MESSAGE:
             self.logger.error("Error: Wrong type of message.")
@@ -81,8 +82,8 @@ class ClientManager:
 
     def use_protocol(self, protocol):
         selected = StopAndWait()
-        if protocol == "True":
-            selected = Selective_Repeat()
+        if protocol == SELECTIVE_REPEAT:
+            selected = SelectiveRepeat()
             self.logger.info("Se usará el protocolo Selective Repeat")
         else:
             self.logger.info("Se usará el protocolo Stop&Wait")

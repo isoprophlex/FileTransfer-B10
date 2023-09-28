@@ -107,7 +107,7 @@ def download(args):
         return
 
     if args.SELECT_REPEAT is True:
-        download_type = Selective_Repeat()
+        download_type = SelectiveRepeat()
         logger.info("Se usará el protocolo Selective Repeat")
     else:
         download_type = StopAndWait()

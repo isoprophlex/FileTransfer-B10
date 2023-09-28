@@ -123,7 +123,7 @@ def upload(args):
         return
 
     if args.SELECT_REPEAT is True:
-        upload_type = Selective_Repeat()
+        upload_type = SelectiveRepeat()
         logger.info("Se usará el protocolo Selective Repeat")
     else:
         upload_type = StopAndWait()
@@ -132,8 +132,8 @@ def upload(args):
 
 
 def check_protocol(selected_repeat):
-    # if selected_repeat is True:
-        #return SELECTIVE_REPEAT
+    if selected_repeat is True:
+        return SELECTIVE_REPEAT
     return STOP_AND_WAIT
 
 
