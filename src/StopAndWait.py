@@ -34,7 +34,7 @@ class StopAndWait():
                 ack_received = self.wait_for_ack(socket, logger)
                 if not ack_received:
                     amount_timeouts += 1
-                    logger.error(f"Timeout number: {amount_timeouts} occurred")
+                    logger.info(f"Timeout number: {amount_timeouts} occurred")
                     if amount_timeouts == self.MAX_TIMEOUTS:
                         logger.error(
                             f"Maximum amount of timeouts reached: ({self.MAX_TIMEOUTS}). Closing connection.")
@@ -50,6 +50,7 @@ class StopAndWait():
             return
 
         finally:
+            logger.warning("Finalizado upload")
             socket.close()
 
     def send_packet(self, socket, host, port, data, logger):
@@ -111,6 +112,7 @@ class StopAndWait():
                 previous_chunk = data_chunk
                 previous_seqn = seq_n
                 seq_n += 1
+        logger.warning("Finalizado download")
         socket.close()
 
     def receive_packet(self, socket, logger):

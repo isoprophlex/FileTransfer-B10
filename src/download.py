@@ -58,6 +58,7 @@ def handshake_download(file_name, reader, client_socket, address, port, sel_repe
 
     while True:
         try:
+            logger.info("Sending file data to server")
             client_socket.sendto(header.encode(), (address, port))
             client_socket.settimeout(TIMEOUT_SECONDS)
 
