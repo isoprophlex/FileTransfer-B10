@@ -2,7 +2,9 @@ import argparse
 import time
 
 from FileReader import *
-from socket import *
+from socket import socket
+from socket import SOCK_DGRAM, AF_INET
+from socket import timeout
 from constants import *
 from StopAndWait import *
 from SelectiveRepeat import *
@@ -130,8 +132,8 @@ def upload(args):
 
 
 def check_protocol(selected_repeat):
-    if selected_repeat is True:
-        return SELECTIVE_REPEAT
+    # if selected_repeat is True:
+        #return SELECTIVE_REPEAT
     return STOP_AND_WAIT
 
 
