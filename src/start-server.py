@@ -45,22 +45,57 @@ def is_finishing(socket, threads, connections):
             for thread in threads:
                 thread.join()
             for connection in connections:
-                connection.close_file_manager()
+                connection.close_file_reader()
             break
 
 
 def start_server(args):
+    logger = get_logger(args.verbose, args.quiet)
+    server_socket = socket(AF_INET, SOCK_DGRAM)
+    server_socket.bind((args.ADDR, args.PORT))
+    logger.warning("Server started...")
+    threads = []
+    connections = []
+    exit_thread = threading.Thread(
+        target=is_finishing, args=(server_socket, threads, connections)
+    )
+    exit_thread.start()
+    server_socket.setblocking(False)
     while True:
-        logger = get_logger(args.verbose, args.quiet)
-        server_socket = socket(AF_INET, SOCK_DGRAM)
-        server_socket.bind((args.ADDR, args.PORT))
-        logger.warning("Server started...")
-        client_data, client_address = server_socket.recvfrom(BUFFER_SIZE)
-        logger.warning(f"client_data: {client_data} - client_address: {client_address}")
-        new_connection = ClientManager(client_address, client_data.decode(), args.verbose, args.quiet, args.FILEPATH)
-        new_connection.accept_connection()
-        new_connection.close_file_reader()
-        logger.warning(f"Se ha conectado un nuevo cliente: {client_address}")
+        try:
+            if not exit_thread.is_alive():
+                logger.info("Cerrando servidor")
+                break
+
+            client_data, client_address = server_socket.recvfrom(BUFFER_SIZE)
+            if not client_data:
+                continue
+            new_thread_list = []
+            for thread in threads:
+                if thread.is_alive():
+                    new_thread_list.append(thread)
+
+            threads = new_thread_list
+            if len(threads) >= MAX_CLIENTS_CONNECTED:
+                logger.info(
+                    "Se alcanzó el máximo de clientes conectados al mismo tiempo"
+                )
+                continue
+
+            new_connection = ClientManager(client_address, client_data.decode(), args.verbose, args.quiet, args.FILEPATH)
+            connections.append(new_connection)
+            new_thread = new_connection.connect()
+            new_thread.start()
+            logger.warning(f"Se ha conectado un nuevo cliente: {client_address}")
+        except BlockingIOError:
+            continue
+        except:
+            break
+    try:
+        server_socket.close()
+    except:
+        pass
+
 
 
 if __name__ == '__main__':

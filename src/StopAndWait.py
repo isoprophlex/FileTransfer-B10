@@ -10,7 +10,7 @@ from FileReader import *
 class StopAndWait():
     def __init__(self):
         self.TIMEOUT_SECONDS = 3
-        self.MAX_TIMEOUTS = 10
+        self.MAX_TIMEOUTS = 3
 
     def upload_file(self, socket, host, port, reader, logger):
         amount_timeouts = 0
@@ -64,7 +64,7 @@ class StopAndWait():
             socket.settimeout(self.TIMEOUT_SECONDS)
             random = randint(1, 10)
             if random % 2 == 0:
-                sleep(6)
+                sleep(3)
             ack = socket.recv(ACK_SIZE)
             logger.info(f"Recibido ACK: {ack[0:4].decode()}")
             return True
@@ -87,9 +87,11 @@ class StopAndWait():
             if data_chunk == previous_chunk:  # Me llegó de nuevo el mismo paquete
                 sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
                 self.send_ack(socket, host, port, sqn_to_send, logger, False)
+                break
             if len(data_chunk) == 5 and data_chunk.decode().endswith("6"):
                 sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
                 self.send_ack(socket, host, port, sqn_to_send, logger, True)
+                logger.info("Upload done succesfully!")
                 break
             if data_chunk is None:
                 amount_timeouts += 1
@@ -109,7 +111,6 @@ class StopAndWait():
                 previous_chunk = data_chunk
                 previous_seqn = seq_n
                 seq_n += 1
-        logger.info("Upload done succesfully!")
         socket.close()
 
     def receive_packet(self, socket, logger):
