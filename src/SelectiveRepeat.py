@@ -1,15 +1,18 @@
 from socket import *
 from constants import *
 from FileReader import *
+import time
 
-ALREADY_ACK = 0
+NOT_SEND = 0
 WAIT_ACK = 1
-NOT_SEND = 2
+ALREADY_ACK = 2
+TIMEOUT = 5  # Set the timeout value in seconds
 
 class SRPacket():
     def __init__(self):
         self.status = NOT_SEND
         self.data = ""
+        self.start_time = None
 
     def is_already_ack(self):
         return self.status == ALREADY_ACK
@@ -22,12 +25,15 @@ class SRPacket():
 
     def set_already_ack(self):
         self.status = ALREADY_ACK
+        self.start_time = None
 
     def set_wait_ack(self):
         self.status = WAIT_ACK
+        self.start_time = time.time()
 
     def set_not_send(self):
         self.status = NOT_SEND
+        self.start_time = None
 
     def set_data(self, data):
         self.data = data
@@ -38,9 +44,13 @@ class SRPacket():
     def data_is_not_null(self):
         return self.data != ""
 
-    def print(self):
-        return (f"status : {self.status} and data is not null: {self.data_is_not_null()}")
+    def has_timed_out(self):
+        if self.start_time is not None:
+            return time.time() - self.start_time > TIMEOUT
+        return False
 
+    def print(self):
+        return f"status : {self.status} and data is not null: {self.data_is_not_null()}"
 
 
 class SelectiveRepeat():
@@ -61,6 +71,9 @@ class SelectiveRepeat():
         bytes_read = ""
         try:
             while self.alive:
+                
+                self.evaluate_packet_timeouts(socket, host, port, logger)
+        
                 while self.next_sqn_in_window(logger) and not reader.is_closed():
                     sqn_to_send = "0" * (SEQN_LENGTH - len(str(self.next_sqn))) + str(self.next_sqn)
                     data_chunk = sqn_to_send.encode()
@@ -112,31 +125,22 @@ class SelectiveRepeat():
     # Additional methods specific to Selective Repeat protocol
     def try_send_window(self, socket, host, port, logger):
         logger.info("start try_send_window")
-        if self.base + self.window_size < self.total_packets:
-            for i in range(self.base, self.base + self.window_size):
-                #self.print_packets(logger)
-                if self.packets[i].is_not_send() and self.packets[i].data_is_not_null():
-                    try:
-                        socket.sendto(self.packets[i].get_data(), (host, port))
-                        logger.info(f"Sending {len(self.packets[i].get_data())} bytes.")
-                        self.packets[i].set_wait_ack()
-                    except Exception as e:
-                        logger.error(f"Error sending packet: {self.packets[i].get_data()[0:4]}")
-        else :            
-            for i in range(self.base, self.window_size - 1):
-                if self.packets[i].is_not_send() and self.packets[i].data_is_not_null():
-                    try:
-                        socket.sendto(self.packets[i].get_data(), (host, port))
-                        logger.info(f"Sending {len(self.packets[i].get_data())} bytes.")
-                        self.packets[i].set_wait_ack()
-                    except Exception as e:
-                        logger.error(f"Error sending packet: {self.packets[i].get_data()[0:4]}")
+        for i in range(self.base, self.base + self.window_size):
+            i %= self.total_packets
+            #self.print_packets(logger)
+            if self.packets[i].is_not_send() and self.packets[i].data_is_not_null():
+                try:
+                    socket.sendto(self.packets[i].get_data(), (host, port))
+                    logger.info(f"Sending {len(self.packets[i].get_data())} bytes.")
+                    self.packets[i].set_wait_ack()
+                except Exception as e:
+                    logger.error(f"Error sending packet: {self.packets[i].get_data()[0:4]}")
 
         logger.info("end try_send_window")
        
 
     def try_receive_window(self, socket, host, port, logger):
-        for i in range(self.window_size):
+        for _ in range(self.window_size):
             try:
                 socket.settimeout(TIMEOUT_SECONDS)  # Establecer un tiempo de espera para el paquete (5 segundos)
                 data_chunk = socket.recv(STD_PACKET_SIZE + 5)
@@ -165,14 +169,12 @@ class SelectiveRepeat():
                     self.packets[self.next_sqn].set_data(data_chunk[SEQN_LENGTH:])
                     self.packets[self.next_sqn].set_already_ack()
 
-                    if self.next_sqn == self.base:
-                        self.base +=1
-                        
+                    self.update_recieve_based()
 
             #except socket.timeout:
             #    logger.error("Error receiving packet - timeout")
             except Exception as e:
-                logger.error(f"Error receiving packet {e}")
+                logger.error(f"Error receiving packet : {e}")
 
     def send_ack(self, socket, host, port, seq_n, logger, is_FIN):
         if not is_FIN:
@@ -211,22 +213,46 @@ class SelectiveRepeat():
         logger.info("end try_receive_ack")
 
     def next_sqn_in_window(self, logger):
-        sum = self.base + self.window_size
-        if sum < self.total_packets:
-            if self.next_sqn < sum:
-                logger.info(f"next_sqn_in_window return true for next_sqn : {self.next_sqn}")
-                return True
-        else:
-            if self.next_sqn < self.base and self.next_sqn < sum - self.total_packets:
-                logger.info(f"next_sqn_in_window return true for next_sqn : {self.next_sqn}")
-                return True
-            elif self.next_sqn >= self.base and self.next_sqn < self.total_packets:
-                logger.info(f"next_sqn_in_window return true for next_sqn : {self.next_sqn}")
-                return True
+        end = (self.base + self.window_size) % self.total_packets
 
-        logger.info(f"next_sqn_in_window return FALSE for next_sqn : {self.next_sqn}")
+        if end > self.base and self.base <= self.next_sqn < end:
+            logger.info(f"next_sqn_in_window return true for next_sqn : {self.next_sqn} - base : {self.base}")
+            return True
+        elif end < self.base and (0 <= self.next_sqn < end or self.base <= self.next_sqn < self.total_packets):
+            logger.info(f"next_sqn_in_window return true for next_sqn : {self.next_sqn} - base : {self.base}")
+            return True
+
+        logger.info(f"next_sqn_in_window return FALSE for next_sqn : {self.next_sqn} - base : {self.base}")
         return False
+
+
+    def evaluate_packet_timeouts(self, socket, host, port, logger):
+        logger.info("start evaluate_packet_timeouts")
+    
+        try:
+            for i in range(self.base, self.base + self.window_size):
+                i %= self.total_packets  # Wrap around if index exceeds total_packets
+                if i < self.total_packets and self.packets[i].is_wait_ack() and self.packets[i].has_timed_out():
+                    logger.error(f"Packet {i} timed out. Resending...")
+                    self.packets[i].set_wait_ack()
+                    socket.sendto(self.packets[i].get_data(), (host, port))
+
+            #time.sleep(1)  # Adjust sleep duration as needed
+        except Exception as e:
+            logger.error(f"Error in evaluate_packet_timeouts: {e}")
+
+        logger.info("end evaluate_packet_timeouts")
+        
+    def update_recieve_based(self): 
+        while True:
+            if self.packets[self.base].is_already_ack():
+                self.base += 1
+                if self.base == self.total_packets:
+                    self.base = 0
+            else: 
+                break
 
     def print_packets(self, logger):
         for x in range(0, self.total_packets):
             logger.info(f"packet {x} : {self.packets[x].print()}")
+
