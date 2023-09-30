@@ -87,7 +87,7 @@ class SelectiveRepeat():
                         reader.close_file()
                         self.alive = False
                         logger.info("file closed")
-                        break
+                        continue
                                             
                     data_chunk += bytes_read
                     self.packets[self.next_sqn].set_data(data_chunk)
@@ -123,7 +123,6 @@ class SelectiveRepeat():
                     i = i % self.total_packets
                     if i == self.last_sqn_writed + 1 and self.packets[i].data_is_not_null():
                         writer.write_file(self.packets[i].get_data())
-                        #self.packets[i] = SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS) 
                         self.last_sqn_writed +=1
                         if self.last_sqn_writed == 9:
                             self.last_sqn_writed = 0
@@ -277,6 +276,7 @@ class SelectiveRepeat():
         sqn_to_send = "0" * (SEQN_LENGTH - len(str(self.next_sqn))) + str(self.next_sqn)
         end_chunk = f"{sqn_to_send}{ACK_FIN}"
         self.packets[self.next_sqn].set_data(end_chunk.encode())
+        self.packets[self.next_sqn].set_not_send()
         self.try_send_window(socket, host, port, logger)
         while not self.should_stop():
             # Esperar el ACK del servidor
