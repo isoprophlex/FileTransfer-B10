@@ -69,6 +69,7 @@ def handshake_upload(file_name, file_size, reader, client_socket, address, port,
 
     while True:
         try:
+            logger.info("Sending packet to server")
             client_socket.sendto(header.encode(), (address, port))
             client_socket.settimeout(TIMEOUT_SECONDS)
 
@@ -91,6 +92,7 @@ def handshake_upload(file_name, file_size, reader, client_socket, address, port,
             return False, None
 
         if decoded_buffer == str(ACK):
+            logger.info("Recived ack")
             return True, server_data
 
         current_time = time.time()

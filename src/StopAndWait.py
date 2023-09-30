@@ -10,7 +10,7 @@ from FileReader import *
 class StopAndWait():
     def __init__(self):
         self.TIMEOUT_SECONDS = 3
-        self.MAX_TIMEOUTS = 10
+        self.MAX_TIMEOUTS = 3
 
     def upload_file(self, socket, host, port, reader, logger):
         amount_timeouts = 0
@@ -34,7 +34,7 @@ class StopAndWait():
                 ack_received = self.wait_for_ack(socket, logger)
                 if not ack_received:
                     amount_timeouts += 1
-                    logger.error(f"Timeout number: {amount_timeouts} occurred")
+                    logger.info(f"Timeout number: {amount_timeouts} occurred")
                     if amount_timeouts == self.MAX_TIMEOUTS:
                         logger.error(
                             f"Maximum amount of timeouts reached: ({self.MAX_TIMEOUTS}). Closing connection.")
@@ -50,6 +50,7 @@ class StopAndWait():
             return
 
         finally:
+            logger.warning("Finalizado upload")
             socket.close()
 
     def send_packet(self, socket, host, port, data, logger):
@@ -62,9 +63,6 @@ class StopAndWait():
     def wait_for_ack(self, socket, logger):
         try:
             socket.settimeout(self.TIMEOUT_SECONDS)
-            random = randint(1, 10)
-            if random % 2 == 0:
-                sleep(6)
             ack = socket.recv(ACK_SIZE)
             logger.info(f"Recibido ACK: {ack[0:4].decode()}")
             return True
@@ -87,9 +85,11 @@ class StopAndWait():
             if data_chunk == previous_chunk:  # Me llegó de nuevo el mismo paquete
                 sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
                 self.send_ack(socket, host, port, sqn_to_send, logger, False)
+                break
             if len(data_chunk) == 5 and data_chunk.decode().endswith("6"):
                 sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
                 self.send_ack(socket, host, port, sqn_to_send, logger, True)
+                logger.info("Upload done succesfully!")
                 break
             if data_chunk is None:
                 amount_timeouts += 1
@@ -109,7 +109,7 @@ class StopAndWait():
                 previous_chunk = data_chunk
                 previous_seqn = seq_n
                 seq_n += 1
-        logger.info("Upload done succesfully!")
+        logger.warning("Finalizado download")
         socket.close()
 
     def receive_packet(self, socket, logger):
@@ -127,6 +127,7 @@ class StopAndWait():
     def send_ack(self, socket, host, port, seq_n, logger, is_FIN):
         if not is_FIN:
             try:
+                sleep(3)
                 ack_message = f"{seq_n}{ACK}"
                 socket.sendto(ack_message.encode(), (host, port))
                 logger.info(f"Sending ACK: {seq_n}")
