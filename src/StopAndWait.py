@@ -127,7 +127,6 @@ class StopAndWait():
     def send_ack(self, socket, host, port, seq_n, logger, is_FIN):
         if not is_FIN:
             try:
-                sleep(3)
                 ack_message = f"{seq_n}{ACK}"
                 socket.sendto(ack_message.encode(), (host, port))
                 logger.info(f"Sending ACK: {seq_n}")

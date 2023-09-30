@@ -50,8 +50,8 @@ class SRPacket():
         if self.start_time is not None:
             ret = time.time() - self.start_time > self.TIMEOUT_SECONDS
             if ret:
-                self.amount_timeouts +=1
-                if self.amount_timeouts == self.MAX_TIMEOUTS:
+                self.timeout_count +=1
+                if self.timeout_count == self.MAX_TIMEOUTS:
                     raise Exception("MAX TIMEOUTS REACHED")
             return ret
         return False
@@ -74,7 +74,6 @@ class SelectiveRepeat():
 
     def upload_file(self, socket, host, port, reader, logger):
         logger.info("start upload_file")
-        amount_timeouts = 0
         bytes_read = ""
         try:
             while not self.should_stop():
@@ -92,10 +91,10 @@ class SelectiveRepeat():
                                             
                     data_chunk += bytes_read
                     self.packets[self.next_sqn].set_data(data_chunk)
+                    self.packets[self.next_sqn].set_not_send()
                     self.next_sqn += 1
                     if self.next_sqn == self.total_packets:
                         self.next_sqn = 0
-                    #self.print_packets(logger)
                 
                 self.try_send_window(socket, host, port, logger)
                 
@@ -120,7 +119,8 @@ class SelectiveRepeat():
             while self.alive:
                 self.try_receive_window(socket, host, port, logger)
 
-                for i in range(self.window_size):
+                for i in range(self.base, self.window_size):
+                    i = i % self.total_packets
                     if i == self.last_sqn_writed + 1 and self.packets[i].data_is_not_null():
                         writer.write_file(self.packets[i].get_data())
                         self.last_sqn_writed +=1
@@ -129,7 +129,7 @@ class SelectiveRepeat():
             logger.error(f"Error durante la descarga - {e}")
 
         finally:
-            logger.info("Upload done succesfully!")
+            logger.info("Download done succesfully!")
             socket.close()
 
     # Additional methods specific to Selective Repeat protocol
@@ -194,6 +194,7 @@ class SelectiveRepeat():
                 logger.info(f"Sending ACK FIN: {seq_n}")
             except:
                 logger.error(f"Error sending ACK - {e}")
+
 
     def try_receive_ack(self, socket, logger):
         logger.info("start try_receive_ack")
