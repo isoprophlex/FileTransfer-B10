@@ -62,9 +62,6 @@ class StopAndWait():
     def wait_for_ack(self, socket, logger):
         try:
             socket.settimeout(self.TIMEOUT_SECONDS)
-            random = randint(1, 10)
-            if random % 2 == 0:
-                sleep(3)
             ack = socket.recv(ACK_SIZE)
             logger.info(f"Recibido ACK: {ack[0:4].decode()}")
             return True
@@ -128,6 +125,7 @@ class StopAndWait():
     def send_ack(self, socket, host, port, seq_n, logger, is_FIN):
         if not is_FIN:
             try:
+                sleep(3)
                 ack_message = f"{seq_n}{ACK}"
                 socket.sendto(ack_message.encode(), (host, port))
                 logger.info(f"Sending ACK: {seq_n}")

@@ -36,7 +36,10 @@ def get_args() -> argparse.Namespace:
 
 def is_finishing(socket, threads, connections):
     while True:
-        input_value = input()
+        try:
+            input_value = input()
+        except EOFError:
+            break
         if input_value == "q":
             try:
                 socket.close()
@@ -51,9 +54,10 @@ def is_finishing(socket, threads, connections):
 
 def start_server(args):
     logger = get_logger(args.verbose, args.quiet)
+    logger.setLevel(args.verbose)
     server_socket = socket(AF_INET, SOCK_DGRAM)
     server_socket.bind((args.ADDR, args.PORT))
-    logger.warning("Server started...")
+    logger.info("Server started...")
     threads = []
     connections = []
     exit_thread = threading.Thread(
@@ -89,13 +93,15 @@ def start_server(args):
             logger.warning(f"Se ha conectado un nuevo cliente: {client_address}")
         except BlockingIOError:
             continue
-        except:
-            break
-    try:
-        server_socket.close()
-    except:
-        pass
-
+        except KeyboardInterrupt:
+            logger.warning("KeyboardInterrupt: Server shutting down...")
+            for thread in threads:
+                thread.join()
+            exit_thread.join()
+            try:
+                server_socket.close()
+            except Exception as e:
+                logger.error(f"Error while closing server socket: {e}")
 
 
 if __name__ == '__main__':
