@@ -123,7 +123,12 @@ class SelectiveRepeat():
                     i = i % self.total_packets
                     if i == self.last_sqn_writed + 1 and self.packets[i].data_is_not_null():
                         writer.write_file(self.packets[i].get_data())
+                        #self.packets[i] = SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS) 
                         self.last_sqn_writed +=1
+                        if self.last_sqn_writed == 9:
+                            self.last_sqn_writed = 0
+
+                self.update_recieve_based()
                 
         except Exception as e:
             logger.error(f"Error durante la descarga - {e}")
@@ -172,8 +177,7 @@ class SelectiveRepeat():
                     self.packets[self.next_sqn].set_data(data_chunk[SEQN_LENGTH:])
                     self.packets[self.next_sqn].set_already_ack()
 
-                    self.update_recieve_based()
-
+                    
         #except socket.timeout:
         #    logger.error("Error receiving packet - timeout")
         except Exception as e:
@@ -250,6 +254,7 @@ class SelectiveRepeat():
     def update_recieve_based(self): 
         while True:
             if self.packets[self.base].is_already_ack():
+                self.packets[self.base] = SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS) 
                 self.base += 1
                 if self.base == self.total_packets:
                     self.base = 0
