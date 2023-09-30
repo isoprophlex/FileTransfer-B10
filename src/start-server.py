@@ -103,6 +103,5 @@ def start_server(args):
             except Exception as e:
                 logger.error(f"Error while closing server socket: {e}")
 
-
 if __name__ == '__main__':
     start_server(get_args())

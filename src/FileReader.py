@@ -36,3 +36,6 @@ class FileReader(object):
             aux = self.file
             self.file = "File closed"
             aux.close()
+
+    def is_closed(self):
+        return self.file == "File closed"
