@@ -75,13 +75,17 @@ class SelectiveRepeat():
     def upload_file(self, socket, host, port, reader, logger):
         logger.info("start upload_file")
         bytes_read = ""
+        bytes_count = 0
+        size = reader.get_file_size()
+        logger.info(f"size: {size}")
         try:
             while not self.should_stop():
                         
                 while self.next_sqn_in_window(logger) and not reader.is_closed():
                     sqn_to_send = "0" * (SEQN_LENGTH - len(str(self.next_sqn))) + str(self.next_sqn)
                     data_chunk = sqn_to_send.encode()
-                    bytes_read = (reader.read_file(STD_PACKET_SIZE))
+                    bytes_read = reader.read_file(STD_PACKET_SIZE)
+                    bytes_count += len(bytes_read)
 
                     if not bytes_read or bytes_read == b'':
                         reader.close_file()
@@ -96,6 +100,7 @@ class SelectiveRepeat():
                     if self.next_sqn == self.total_packets:
                         self.next_sqn = 0
                 
+                logger.info(f"bytes_count: {bytes_count} - size: {size}")
                 self.try_send_window(socket, host, port, logger)
                 
                 # Esperar el ACK del servidor
@@ -115,17 +120,20 @@ class SelectiveRepeat():
         logger.info("end upload_file")
 
     def download_file(self, socket, host, port, writer, seq_n, logger):
+        logger.info("start download_file")
         try:
             while self.alive:
                 self.try_receive_window(socket, host, port, logger)
 
-                for i in range(self.base, self.window_size):
+                for i in range(self.base, self.base + self.window_size):
                     i = i % self.total_packets
+                    #logger.info(f"iteration {i}")
                     if i == self.last_sqn_writed + 1 and self.packets[i].data_is_not_null():
+                        #logger.info(f"writting packet {i}")
                         writer.write_file(self.packets[i].get_data())
                         self.last_sqn_writed +=1
                         if self.last_sqn_writed == 9:
-                            self.last_sqn_writed = 0
+                            self.last_sqn_writed = -1
 
                 self.update_recieve_based()
                 
@@ -135,6 +143,8 @@ class SelectiveRepeat():
         finally:
             logger.info("Download done succesfully!")
             socket.close()
+    
+        logger.info("end download_file")
 
     # Additional methods specific to Selective Repeat protocol
     def try_send_window(self, socket, host, port, logger):
