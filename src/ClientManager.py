@@ -94,9 +94,7 @@ class ClientManager:
         code = protocol.download_file(
             self.socket, client_name, client_port, self.file_reader, seq_n, self.logger
         )
-        if code == str(ERROR):
-            self.close_file_reader()
-            return
+        self.close_file_reader()
 
     
     def upload_file(self, protocol, file_name, client_name, client_port, seq_n):
@@ -104,9 +102,7 @@ class ClientManager:
         code = protocol.upload_file(
             self.socket, client_name, client_port, self.file_reader, self.logger
         )
-        if code == str(ERROR):
-            self.close_file_reader()
-            return
+        self.close_file_reader()
 
     def close_file_reader(self):
         self.file_reader.close_file()

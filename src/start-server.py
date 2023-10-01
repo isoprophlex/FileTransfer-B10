@@ -70,8 +70,11 @@ def start_server(args):
             if not exit_thread.is_alive():
                 logger.info("Cerrando servidor")
                 break
-
-            client_data, client_address = server_socket.recvfrom(BUFFER_SIZE)
+            try:
+                client_data, client_address = server_socket.recvfrom(BUFFER_SIZE)
+            except:
+                #  Try again if recv doesnt work.
+                continue
             if not client_data:
                 continue
             new_thread_list = []
@@ -94,7 +97,7 @@ def start_server(args):
         except BlockingIOError:
             continue
         except KeyboardInterrupt:
-            logger.warning("KeyboardInterrupt: Server shutting down...")
+            logger.warning("Server shutting down...")
             for thread in threads:
                 thread.join()
             exit_thread.join()
