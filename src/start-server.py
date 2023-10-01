@@ -48,7 +48,9 @@ def is_finishing(socket, threads, connections):
             for thread in threads:
                 thread.join()
             for connection in connections:
-                connection.close_file_reader()
+                #  Waiting for threads to finish, no exception
+                code = False
+                connection.close_file_reader(code)
             break
 
 

@@ -31,11 +31,14 @@ class FileReader(object):
         file_stats = os.stat(self.file_name)
         return file_stats.st_size
 
-    def close_file(self):
-        if self.file and self.file != "File closed":
+    def close_file(self, exc_exit):
+        if self.file and self.file != "File closed" and not exc_exit:
             aux = self.file
             self.file = "File closed"
             aux.close()
+        elif self.file and self.file != "File closed" and exc_exit:
+            os.remove(self.file)
+            self.file = "File closed"
 
     def is_closed(self):
         return self.file == "File closed"

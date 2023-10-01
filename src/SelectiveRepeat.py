@@ -73,90 +73,67 @@ class SelectiveRepeat():
         self.packets = [SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS) for _ in range(self.total_packets)]
         self.last_sqn_writed = -1 
         self.alive = True
+        self.exception_exit = False
 
     def upload_file(self, socket, host, port, reader, logger):
-        logger.info("start upload_file")
         bytes_read = ""
         bytes_count = 0
         size = reader.get_file_size()
-        #logger.info(f"size: {size}")
         try:
             while not self.should_stop():
                         
-                while self.next_sqn_in_window(logger) and not reader.is_closed():
+                while self.next_sqn_in_window(logger) and self.alive:
                     sqn_to_send = "0" * (SEQN_LENGTH - len(str(self.next_sqn))) + str(self.next_sqn)
                     data_chunk = sqn_to_send.encode()
                     bytes_read = reader.read_file(STD_PACKET_SIZE)
                     bytes_count += len(bytes_read)
 
                     if not bytes_read or bytes_read == b'':
-                        reader.close_file()
                         self.alive = False
-                        logger.info("file closed")
                         continue
-                                            
                     data_chunk += bytes_read
                     self.packets[self.next_sqn].set_data(data_chunk)
                     self.packets[self.next_sqn].set_not_send()
                     self.next_sqn += 1
                     if self.next_sqn == self.total_packets:
                         self.next_sqn = 0
-                
-                #logger.info(f"bytes_count: {bytes_count} - size: {size}")
                 self.try_send_window(socket, host, port, logger)
-                
                 # Esperar el ACK del servidor
                 self.try_receive_ack(socket, logger)
-
                 self.evaluate_packet_timeouts(socket, host, port, logger)
-                
             self.end(socket, host, port, logger)
-
         except Exception as e:
             logger.error(f"Error during transmission: {e}")
-            return
-
+            self.exception_exit = True
         finally:
             socket.close()
-            reader.close_file()
-            logger.info("upload done")
-        
-        logger.info("end upload_file")
+        return self.exception_exit
 
     def download_file(self, socket, host, port, writer, seq_n, logger):
-        logger.info("start download_file")
         try:
             while self.alive:
                 self.try_receive_window(socket, host, port, logger)
-
                 for i in range(self.base, self.base + self.window_size):
                     i = i % self.total_packets
-                    #logger.info(f"iteration {i}")
                     if i == self.last_sqn_writed + 1 and self.packets[i].data_is_not_null():
-                        #logger.info(f"writting packet {i}")
                         writer.write_file(self.packets[i].get_data())
                         self.last_sqn_writed +=1
-                        if self.last_sqn_writed == 9:
+                        if self.last_sqn_writed == self.total_packets:
                             self.last_sqn_writed = -1
-
                 self.update_recieve_based()
-                
+            logger.info("Download done")
         except Exception as e:
-            logger.error(f"Error during transmission: {e}")
-
+            self.exception_exit = True
+            logger.error(f"Error during download: {e}")
         finally:
             socket.close()
-            writer.close_file()
-            logger.info("Download done")
-    
-        logger.info("end download_file")
+        return self.exception_exit
 
     # Additional methods specific to Selective Repeat protocol
     def try_send_window(self, socket, host, port, logger):
         logger.info("start try_send_window")
         for i in range(self.base, self.base + self.window_size):
             i %= self.total_packets
-            #self.print_packets(logger)
             if self.packets[i].is_not_send() and self.packets[i].data_is_not_null():
                 try:
                     socket.sendto(self.packets[i].get_data(), (host, port))
@@ -164,9 +141,6 @@ class SelectiveRepeat():
                     self.packets[i].set_wait_ack()
                 except Exception as e:
                     logger.error(f"Error sending packet: {self.packets[i].get_data()[0:4]} - {e}")
-
-        logger.info("end try_send_window")
-       
 
     def try_receive_window(self, socket, host, port, logger):
         try:
@@ -236,7 +210,7 @@ class SelectiveRepeat():
             except Exception as e:
                 logger.error(f"error in try_receive_ack base: {self.base} - error : {e}")
                 break
-        
+
         logger.info("end try_receive_ack")
 
     def next_sqn_in_window(self, logger):

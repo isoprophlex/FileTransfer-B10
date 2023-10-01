@@ -11,6 +11,7 @@ class StopAndWait():
     def __init__(self):
         self.TIMEOUT_SECONDS = 3
         self.MAX_TIMEOUTS = 3
+        self.exception_exit = False
 
     def upload_file(self, socket, host, port, reader, logger):
         amount_timeouts = 0
@@ -47,11 +48,12 @@ class StopAndWait():
 
         except:
             logger.error("Error durante la transmisión")
-            return
+            return False
 
         finally:
             logger.warning("Finalizado upload")
             socket.close()
+
 
     def send_packet(self, socket, host, port, data, logger):
         try:
@@ -79,6 +81,7 @@ class StopAndWait():
                 amount_timeouts += 1
                 logger.error(f"Timeout number {amount_timeouts}!")
                 if amount_timeouts >= self.MAX_TIMEOUTS:
+                    self.exception_exit = True
                     logger.error(f"Maximum amount of timeouts reached: ({MAX_TIMEOUTS}). Closing connection.")
                     break
                 continue
@@ -95,6 +98,7 @@ class StopAndWait():
                 amount_timeouts += 1
                 logger.error(f"Timeout number {amount_timeouts}!")
                 if amount_timeouts >= self.MAX_TIMEOUTS:
+                    self.exception_exit = False
                     logger.error(f"Maximum amount of timeouts reached: ({MAX_TIMEOUTS}). Closing connection.")
                     break
             elif data_chunk != previous_chunk:
@@ -104,6 +108,7 @@ class StopAndWait():
                 try:
                     writer.write_file(data_chunk[SEQN_LENGTH:])
                 except:
+                    self.exception_exit = True
                     logger.error("Error writing file")
                     break
                 previous_chunk = data_chunk
@@ -111,7 +116,7 @@ class StopAndWait():
                 seq_n += 1
         logger.warning("Finalizado download")
         socket.close()
-
+        return self.exception_exit
     def receive_packet(self, socket, logger):
         try:
             socket.settimeout(self.TIMEOUT_SECONDS)  # Establecer un tiempo de espera para el paquete (5 segundos)

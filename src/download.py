@@ -91,29 +91,32 @@ def handshake_download(file_name, reader, client_socket, address, port, sel_repe
 
 
 def download(args):
-    logger = get_logger(args.verbose, args.quiet)
-    print("Press q to quit: ")
-    client_socket = socket(AF_INET, SOCK_DGRAM)
+    try:
+        logger = get_logger(args.verbose, args.quiet)
+        print("Press q to quit: ")
+        client_socket = socket(AF_INET, SOCK_DGRAM)
 
-    file_name = f"{args.FILEPATH}/{args.FILENAME}"
-    logger.warning("Client ready to download a file")
+        file_name = f"{args.FILEPATH}/{args.FILENAME}"
+        logger.warning("Client ready to download a file")
 
-    reader = FileReader(file_name)
+        reader = FileReader(file_name)
 
-    result, server_info = handshake_download(
-        args.FILENAME, reader, client_socket, args.ADDR, args.PORT, check_protocol(args.SELECT_REPEAT), logger
-    )
+        result, server_info = handshake_download(
+            args.FILENAME, reader, client_socket, args.ADDR, args.PORT, check_protocol(args.SELECT_REPEAT), logger
+        )
 
-    if result is False:
+        if result is False:
+            return
+
+        if args.SELECT_REPEAT is True:
+            download_type = SelectiveRepeat()
+            logger.info("Se usará el protocolo Selective Repeat")
+        else:
+            download_type = StopAndWait()
+            logger.info("Se usará el protocolo Stop&Wait")
+        download_type.download_file(client_socket, server_info[0], server_info[1], reader, 0, logger)
+    except:
         return
-
-    if args.SELECT_REPEAT is True:
-        download_type = SelectiveRepeat()
-        logger.info("Se usará el protocolo Selective Repeat")
-    else:
-        download_type = StopAndWait()
-        logger.info("Se usará el protocolo Stop&Wait")
-    download_type.download_file(client_socket, server_info[0], server_info[1], reader, 0, logger)
 
 
 def check_protocol(selected_repeat):
@@ -122,4 +125,5 @@ def check_protocol(selected_repeat):
     return STOP_AND_WAIT
 
 
-download(get_args())
+if __name__ == '__main__':
+    download(get_args())
