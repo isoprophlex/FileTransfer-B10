@@ -1,7 +1,8 @@
-from socket import *
+from socket import socket, timeout
 from constants import *
 from FileReader import *
 import time
+import errno
 
 NOT_SEND = 0
 WAIT_ACK = 1
@@ -64,6 +65,7 @@ class SelectiveRepeat():
     def __init__(self):
         self.TIMEOUT_SECONDS = 3
         self.MAX_TIMEOUTS = 10
+        self.last_packet_time = time.time()
         self.window_size = 4  # Adjust the window size
         self.base = 0
         self.next_sqn = 0
@@ -77,7 +79,7 @@ class SelectiveRepeat():
         bytes_read = ""
         bytes_count = 0
         size = reader.get_file_size()
-        logger.info(f"size: {size}")
+        #logger.info(f"size: {size}")
         try:
             while not self.should_stop():
                         
@@ -100,7 +102,7 @@ class SelectiveRepeat():
                     if self.next_sqn == self.total_packets:
                         self.next_sqn = 0
                 
-                logger.info(f"bytes_count: {bytes_count} - size: {size}")
+                #logger.info(f"bytes_count: {bytes_count} - size: {size}")
                 self.try_send_window(socket, host, port, logger)
                 
                 # Esperar el ACK del servidor
@@ -111,11 +113,13 @@ class SelectiveRepeat():
             self.end(socket, host, port, logger)
 
         except Exception as e:
-            logger.error(f"Error durante la transmisión: {e}")
+            logger.error(f"Error during transmission: {e}")
             return
 
         finally:
             socket.close()
+            reader.close_file()
+            logger.info("upload done")
         
         logger.info("end upload_file")
 
@@ -138,11 +142,12 @@ class SelectiveRepeat():
                 self.update_recieve_based()
                 
         except Exception as e:
-            logger.error(f"Error durante la descarga - {e}")
+            logger.error(f"Error during transmission: {e}")
 
         finally:
-            logger.info("Download done succesfully!")
             socket.close()
+            writer.close_file()
+            logger.info("Download done")
     
         logger.info("end download_file")
 
@@ -168,6 +173,7 @@ class SelectiveRepeat():
             for _ in range(self.window_size):
                 socket.settimeout(TIMEOUT_SECONDS)  # Establecer un tiempo de espera para el paquete (5 segundos)
                 data_chunk = socket.recv(STD_PACKET_SIZE + 5)
+                self.last_packet_time = time.time() 
                 logger.info(f"Packet of {len(data_chunk)} bytes received.")
                 
                 self.next_sqn = int(data_chunk[0:4].decode())
@@ -187,8 +193,12 @@ class SelectiveRepeat():
                     self.packets[self.next_sqn].set_already_ack()
 
                     
-        #except socket.timeout:
-        #    logger.error("Error receiving packet - timeout")
+        except OSError as e:
+            if e.errno == errno.EAGAIN or e.errno == errno.EWOULDBLOCK:
+                logger.error("Error receiving packet - timeout")
+                current_time = time.time()
+                if current_time - self.last_packet_time > MAX_TIME_WITHOUT_PACK:
+                    raise Exception("Timeout expired, no packets received.")
         except Exception as e:
             logger.error(f"Error receiving packet : {e}")
 
@@ -249,13 +259,15 @@ class SelectiveRepeat():
         try:
             for i in range(self.base, self.base + self.window_size):
                 i %= self.total_packets  # Wrap around if index exceeds total_packets
-                if i < self.total_packets and self.packets[i].is_wait_ack() and self.packets[i].has_timed_out():
+                if self.packets[i].is_wait_ack() and self.packets[i].has_timed_out():
                     logger.error(f"Packet {i} timed out. Resending...")
-                    self.packets[i].set_wait_ack()
                     socket.sendto(self.packets[i].get_data(), (host, port))
+                    self.packets[i].set_wait_ack()
 
             #time.sleep(1)  # Adjust sleep duration as needed
         except Exception as e:
+            if str(e) == "MAX TIMEOUTS REACHED":
+                raise e
             logger.error(f"Error in evaluate_packet_timeouts: {e}")
 
         logger.info("end evaluate_packet_timeouts")
