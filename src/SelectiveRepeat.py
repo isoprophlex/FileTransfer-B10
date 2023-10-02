@@ -174,7 +174,7 @@ class SelectiveRepeat():
 
                     
         except timeout:
-            logger.error("Error receiving packet - timeout")
+            logger.info("Error receiving packet - timeout")
             current_time = time.time()
             if current_time - self.last_packet_time > MAX_TIME_WITHOUT_PACK:
                 raise Exception("Timeout expired, no packets received.")
@@ -252,7 +252,7 @@ class SelectiveRepeat():
             for i in range(self.base, self.base + self.window_size):
                 i %= self.total_packets  # Wrap around if index exceeds total_packets
                 if self.packets[i].is_wait_ack() and self.packets[i].has_timed_out():
-                    logger.error(f"Packet {i} timed out. Resending...")
+                    logger.info(f"Packet {i} timed out. Resending...")
                     socket.sendto(self.packets[i].get_data(), (host, port))
                     self.packets[i].set_wait_ack()
 

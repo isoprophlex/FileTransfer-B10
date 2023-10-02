@@ -102,7 +102,7 @@ class ClientManager:
         code = protocol.upload_file(
             self.socket, client_name, client_port, self.file_reader, self.logger
         )
-        self.file_reader.close_file(code)
+        #self.file_reader.close_file(code)
 
     def close_file_reader(self, code):
         self.file_reader.close_file(code)
