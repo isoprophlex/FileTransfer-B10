@@ -72,7 +72,7 @@ def handshake_download(file_name, reader, client_socket, address, port, sel_repe
 
         decoded_buffer = msj.decode()
 
-        if decoded_buffer == INVALID_OP:
+        if decoded_buffer == str(INVALID_OP):
             logger.error("Operation you suggested is invalid")
             try:
                 reader.close_file()
@@ -80,7 +80,14 @@ def handshake_download(file_name, reader, client_socket, address, port, sel_repe
             except:
                 pass
             return False, None
-
+        if decoded_buffer == str(FILENOTFOUND):
+            logger.error("Oops! The file you want to download doesn`t exist!")
+            try:
+                reader.close_file()
+                client_socket.close()
+            except:
+                pass
+            return False, None
         if decoded_buffer == str(ACK):
             return True, server_data
 

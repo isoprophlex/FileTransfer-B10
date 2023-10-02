@@ -55,7 +55,7 @@ class StopAndWait():
             return False
 
         finally:
-            logger.warning("Finalizado upload")
+            logger.debug("Upload completed")
             socket.close()
 
 

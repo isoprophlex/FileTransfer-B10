@@ -104,7 +104,6 @@ def handshake_upload(file_name, file_size, reader, client_socket, address, port,
 def upload(args):
     try:
         logger = get_logger(args.verbose, args.quiet)
-        print("Press q to quit: ")
         client_socket = socket(AF_INET, SOCK_DGRAM)
 
         file_name = f"{args.FILEPATH}/{args.FILENAME}"

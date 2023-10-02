@@ -65,6 +65,11 @@ class ClientManager:
             return False
         filename = start_message.get_filename()
         filesize = start_message.get_filesize()
+        _file_ = os.path.join(self.storage, filename)
+        if not os.path.isfile(_file_):
+                self.socket.sendto(str(FILENOTFOUND).encode(), (self.client_address[0], self.client_address[1]))
+                self.logger.error("File not found")
+                return False
         try:
             if start_message.get_operation_type():  # the client asks for an upload
                 if start_message.get_operation_type() == UPLOAD & int(filesize) > MAX_FILE_SIZE:
@@ -95,7 +100,7 @@ class ClientManager:
         code = protocol.download_file(
             self.socket, client_name, client_port, self.file_reader, seq_n, self.logger
         )
-        self.file_reader.close_file(code)
+        #self.file_reader.close_file(code)
 
     def upload_file(self, protocol, file_name, client_name, client_port, seq_n):
         self.file_reader = FileReader(os.path.join(self.storage, file_name))
@@ -105,4 +110,8 @@ class ClientManager:
         #self.file_reader.close_file(code)
 
     def close_file_reader(self, code):
-        self.file_reader.close_file(code)
+        try:
+            self.file_reader.close_file(code)
+        #  For the case of file not existing
+        except AttributeError:
+            return
