@@ -2,7 +2,6 @@ from socket import socket, timeout
 from constants import *
 from FileReader import *
 import time
-import errno
 
 NOT_SEND = 0
 WAIT_ACK = 1
@@ -63,13 +62,13 @@ class SRPacket():
 
 class SelectiveRepeat():
     def __init__(self):
-        self.TIMEOUT_SECONDS = 3
+        self.TIMEOUT_SECONDS = 1
         self.MAX_TIMEOUTS = 10
         self.last_packet_time = time.time()
-        self.window_size = 4  # Adjust the window size
+        self.window_size = 20  # Adjust the window size
         self.base = 0
         self.next_sqn = 0
-        self.total_packets = 10
+        self.total_packets = 50
         self.packets = [SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS) for _ in range(self.total_packets)]
         self.last_sqn_writed = -1 
         self.alive = True
@@ -115,12 +114,15 @@ class SelectiveRepeat():
                 self.try_receive_window(socket, host, port, logger)
                 for i in range(self.base, self.base + self.window_size):
                     i = i % self.total_packets
+                    logger.info(f"iteration {i}")
                     if i == self.last_sqn_writed + 1 and self.packets[i].data_is_not_null():
+                        logger.info(f"writting {i}")
                         writer.write_file(self.packets[i].get_data())
                         self.last_sqn_writed +=1
-                        if self.last_sqn_writed == self.total_packets:
+                        if self.last_sqn_writed == self.total_packets-1:
                             self.last_sqn_writed = -1
                 self.update_recieve_based()
+                logger.info(f"new base : {self.base}")
             logger.info("Download done")
         except Exception as e:
             self.exception_exit = True
@@ -167,12 +169,11 @@ class SelectiveRepeat():
                     self.packets[self.next_sqn].set_already_ack()
 
                     
-        except OSError as e:
-            if e.errno == errno.EAGAIN or e.errno == errno.EWOULDBLOCK:
-                logger.error("Error receiving packet - timeout")
-                current_time = time.time()
-                if current_time - self.last_packet_time > MAX_TIME_WITHOUT_PACK:
-                    raise Exception("Timeout expired, no packets received.")
+        except timeout:
+            logger.error("Error receiving packet - timeout")
+            current_time = time.time()
+            if current_time - self.last_packet_time > MAX_TIME_WITHOUT_PACK:
+                raise Exception("Timeout expired, no packets received.")
         except Exception as e:
             logger.error(f"Error receiving packet : {e}")
 
@@ -195,21 +196,34 @@ class SelectiveRepeat():
 
     def try_receive_ack(self, socket, logger):
         logger.info("start try_receive_ack")
+        it = 0
         while True:
             try:
+                it += 1
                 socket.settimeout(TIMEOUT_SECONDS)  # Establecer un tiempo de espera para el ACK (5 segundos)
                 ack = socket.recv(ACK_SIZE)
                 seq_num = int(ack[0:4].decode())
                 logger.info(f"Recibido ACK: {seq_num}")
                 self.packets[seq_num].set_already_ack()
                 if seq_num == self.base:
+                    self.packets[self.base] = SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS) 
                     self.base +=1
                     if self.base == self.total_packets:
                         self.base = 0
-            #except socket.timeout:
+                    for _ in range(self.window_size-it):
+                        if self.packets[self.base].is_already_ack():
+                            self.packets[self.base] = SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS) 
+                            self.base += 1
+                            if self.base == self.total_packets:
+                                self.base = 0
+                        else: 
+                            break
+            except timeout:
+                logger.info("not more ACK in window")
+                break
             except Exception as e:
                 logger.error(f"error in try_receive_ack base: {self.base} - error : {e}")
-                break
+                raise e
 
         logger.info("end try_receive_ack")
 
