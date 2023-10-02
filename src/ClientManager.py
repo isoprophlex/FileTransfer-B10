@@ -100,14 +100,14 @@ class ClientManager:
         code = protocol.download_file(
             self.socket, client_name, client_port, self.file_reader, seq_n, self.logger
         )
-        # self.file_reader.close_file(code)
+        self.file_reader.close_file(code)
 
     def upload_file(self, protocol, file_name, client_name, client_port, seq_n):
         self.file_reader = FileReader(os.path.join(self.storage, file_name))
         code = protocol.upload_file(
             self.socket, client_name, client_port, self.file_reader, self.logger
         )
-        # self.file_reader.close_file(code)
+        self.file_reader.close_file(code)
 
     def close_file_reader(self, code):
         try:
