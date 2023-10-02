@@ -100,21 +100,15 @@ def handshake_download(file_name, reader, client_socket, address, port, sel_repe
 def download(args):
     try:
         logger = get_logger(args.verbose, args.quiet)
-        print("Press q to quit: ")
         client_socket = socket(AF_INET, SOCK_DGRAM)
-
         file_name = f"{args.FILEPATH}/{args.FILENAME}"
         logger.warning("Client ready to download a file")
-
         reader = FileReader(file_name)
-
         result, server_info = handshake_download(
             args.FILENAME, reader, client_socket, args.ADDR, args.PORT, check_protocol(args.SELECT_REPEAT), logger
         )
-
         if result is False:
             return
-
         if args.SELECT_REPEAT is True:
             download_type = SelectiveRepeat()
             logger.info("Protocol chose: Selective Repeat")

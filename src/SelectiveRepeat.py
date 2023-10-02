@@ -7,6 +7,7 @@ NOT_SEND = 0
 WAIT_ACK = 1
 ALREADY_ACK = 2
 
+
 class SRPacket():
     def __init__(self, timeout, count):
         self.status = NOT_SEND
@@ -50,7 +51,7 @@ class SRPacket():
         if self.start_time is not None:
             ret = time.time() - self.start_time > self.TIMEOUT_SECONDS
             if ret:
-                self.timeout_count +=1
+                self.timeout_count += 1
                 if self.timeout_count == self.MAX_TIMEOUTS:
                     raise Exception("MAX TIMEOUTS REACHED")
             return ret
@@ -70,7 +71,7 @@ class SelectiveRepeat():
         self.next_sqn = 0
         self.total_packets = 50
         self.packets = [SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS) for _ in range(self.total_packets)]
-        self.last_sqn_writed = -1 
+        self.last_sqn_writed = -1
         self.alive = True
         self.exception_exit = False
 
@@ -81,7 +82,7 @@ class SelectiveRepeat():
         size = reader.get_file_size()
         try:
             while not self.should_stop():
-                        
+
                 while self.next_sqn_in_window(logger) and self.alive:
                     sqn_to_send = "0" * (SEQN_LENGTH - len(str(self.next_sqn))) + str(self.next_sqn)
                     data_chunk = sqn_to_send.encode()
@@ -101,6 +102,11 @@ class SelectiveRepeat():
                 # Esperar el ACK del servidor
                 self.try_receive_ack(socket, logger)
                 self.evaluate_packet_timeouts(socket, host, port, logger)
+                
+                current_time = time.time()
+                if current_time - self.last_packet_time > MAX_TIME_WITHOUT_PACK:
+                    raise Exception("Timeout expired, no packets send.")
+
             self.end(socket, host, port, logger)
         except Exception as e:
             logger.error(f"Error during transmission: {e}")
@@ -120,8 +126,8 @@ class SelectiveRepeat():
                     if i == self.last_sqn_writed + 1 and self.packets[i].data_is_not_null():
                         logger.info(f"writting {i}")
                         writer.write_file(self.packets[i].get_data())
-                        self.last_sqn_writed +=1
-                        if self.last_sqn_writed == self.total_packets-1:
+                        self.last_sqn_writed += 1
+                        if self.last_sqn_writed == self.total_packets - 1:
                             self.last_sqn_writed = -1
                     else:
                         break
@@ -142,6 +148,7 @@ class SelectiveRepeat():
             if self.packets[i].is_not_send() and self.packets[i].data_is_not_null():
                 try:
                     socket.sendto(self.packets[i].get_data(), (host, port))
+                    self.last_packet_time = time.time()
                     logger.info(f"Sending {len(self.packets[i].get_data())} bytes.")
                     self.packets[i].set_wait_ack()
                 except Exception as e:
@@ -167,7 +174,7 @@ class SelectiveRepeat():
                     self.packets[self.next_sqn].set_data(data_chunk[SEQN_LENGTH:])
                     self.packets[self.next_sqn].set_already_ack()
 
-                    
+
         except timeout:
             logger.info("Error receiving packet - timeout")
             current_time = time.time()
@@ -192,7 +199,6 @@ class SelectiveRepeat():
             except:
                 logger.error(f"Error sending ACK - {e}")
 
-
     def try_receive_ack(self, socket, logger):
         logger.info("start try_receive_ack")
         it = 0
@@ -205,17 +211,17 @@ class SelectiveRepeat():
                 logger.info(f"Recibido ACK: {seq_num}")
                 self.packets[seq_num].set_already_ack()
                 if seq_num == self.base:
-                    self.packets[self.base] = SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS) 
-                    self.base +=1
+                    self.packets[self.base] = SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS)
+                    self.base += 1
                     if self.base == self.total_packets:
                         self.base = 0
-                    for _ in range(self.window_size-it):
+                    for _ in range(self.window_size - it):
                         if self.packets[self.base].is_already_ack():
-                            self.packets[self.base] = SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS) 
+                            self.packets[self.base] = SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS)
                             self.base += 1
                             if self.base == self.total_packets:
                                 self.base = 0
-                        else: 
+                        else:
                             break
             except timeout:
                 logger.info("not more ACK in window")
@@ -237,7 +243,6 @@ class SelectiveRepeat():
         logger.info(f"next_sqn_in_window return FALSE for next_sqn : {self.next_sqn} - base : {self.base}")
         return False
 
-
     def evaluate_packet_timeouts(self, socket, host, port, logger):
         try:
             for i in range(self.base, self.base + self.window_size):
@@ -245,6 +250,7 @@ class SelectiveRepeat():
                 if self.packets[i].is_wait_ack() and self.packets[i].has_timed_out():
                     logger.info(f"Packet {i} timed out. Resending...")
                     socket.sendto(self.packets[i].get_data(), (host, port))
+                    self.last_packet_time = time.time()
                     self.packets[i].set_wait_ack()
         except Exception as e:
             if str(e) == "MAX TIMEOUTS REACHED":
@@ -252,15 +258,15 @@ class SelectiveRepeat():
             logger.error(f"Error in evaluate_packet_timeouts: {e}")
 
         logger.info("end evaluate_packet_timeouts")
-        
-    def update_recieve_based(self): 
+
+    def update_recieve_based(self):
         while True:
             if self.packets[self.base].is_already_ack():
-                self.packets[self.base] = SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS) 
+                self.packets[self.base] = SRPacket(self.TIMEOUT_SECONDS, self.MAX_TIMEOUTS)
                 self.base += 1
                 if self.base == self.total_packets:
                     self.base = 0
-            else: 
+            else:
                 break
 
     def should_stop(self):
@@ -269,7 +275,7 @@ class SelectiveRepeat():
                 i %= self.total_packets  # Wrap around if index exceeds total_packets
                 if self.packets[i].is_wait_ack():
                     return False
-            
+
             return True
 
         return False
@@ -285,7 +291,6 @@ class SelectiveRepeat():
             self.try_receive_ack(socket, logger)
 
             self.evaluate_packet_timeouts(socket, host, port, logger)
-        
 
     def print_packets(self, logger):
         for x in range(0, self.total_packets):
