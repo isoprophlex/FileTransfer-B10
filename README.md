@@ -1,18 +1,62 @@
-# FileTransfer-B10
+# TP1-Intro-a-Distribuidos
 
-Este trabajo práctico se plantea como objetivo la comprensión y la puesta en práctica de los conceptos y herramientas
-necesarias para la implementación de un protocolo RDT. Para lograr este objetivo, se deberá desarrollar una aplicación
-de arquitectura cliente-servidor que implemente la funcionalidad de transferencia de archivos mediante las siguientes
-operaciones:
+## Instalar los requerimientos
 
-· *UPLOAD*: Transferencia de un archivo del cliente hacia el servidor
+```
+> pip install -r python3
+```
 
-· *DOWNLOAD*: Transferencia de un archivo del servidor hacia el cliente
+## Para levantar el servidor
 
-Dada las diferentes operaciones que pueden realizarse entre el cliente y el servidor, se requiere del diseño e implementación de un protocolo de aplicación básico que especifique los mensajes intercambiados entre los distintos procesos.
+```
+> cd src/lib
+> python start-server.py -h
+usage: start-server [-h] [-v | -q] [-H ADDR] [-p PORT] [-s DIRPATH]
+<command description > optional arguments:
+-h, --help -v, --verbose -q, --quiet -H, --host -p, --port -s, --storage
+show this help message and exit increase output verbosity decrease output verbosity service IP address
+service port storage dir path
 
-Participantes:
-- Amigo, Nicolas
-- Bravo, Nicolas
-- Cuppari, Franco
-- Ledesma, Dylan
+Por ejemplo:
+
+> cd src/lib
+> python3 start-server.py -H localhost -p 8080 -s destination
+```
+
+## Para cargar un archivo (cliente)
+
+```
+> cd src/lib
+> python upload.py -h
+usage: upload [-h] [-v | -q] [-H ADDR] [-p PORT] [-s FILEPATH] [-n FILENAME] [-sr SELECT_REPEAT]
+<command description > optional arguments:
+-h, --help -v, --verbose -q, --quiet -H, --host -p, --port -s, --src
+-n, --name, -sr, --sel_repeat
+show this help message and exit increase output verbosity decrease output verbosity server IP address
+server port source file path file name
+
+Por ejemplo:   
+
+> cd src/lib
+> python3 upload.py -H localhost -p 12000 -s home/usuario1/Documents -n cancion.mp3 -sr True
+> python3 upload.py -H localhost -p 12000 -s home/usuario1/Documents -n cancion.mp3 -sr False
+```
+
+## Para descargar un archivo (cliente)
+
+```
+> cd src/lib
+> python download.py -h
+usage: download [-h] [-v | -q] [-H ADDR] [-p PORT] [-d FILEPATH] [-n FILENAME]
+<command description > optional arguments:
+-h, --help -v, --verbose -q, --quiet -H, --host -p, --port -d, --dst
+-n, --name
+show this help message and exit increase output verbosity decrease output verbosity server IP address
+server port destination file path file name
+
+Por ejemplo:
+
+> cd src/lib
+> python3 download.py -H localhost -p 12000 -d destination -n cancion.mp3 -sr True
+> python3 download.py -H localhost -p 12000 -d destination -n cancion.mp3 -sr False
+```
