@@ -62,7 +62,7 @@ class SRPacket():
 
 class SelectiveRepeat():
     def __init__(self):
-        self.TIMEOUT_SECONDS = 0.025
+        self.TIMEOUT_SECONDS = 0.03
         self.MAX_TIMEOUTS = 10
         self.last_packet_time = time.time()
         self.window_size = 20  # Adjust the window size
@@ -137,7 +137,6 @@ class SelectiveRepeat():
 
     # Additional methods specific to Selective Repeat protocol
     def try_send_window(self, socket, host, port, logger):
-        logger.info("start try_send_window")
         for i in range(self.base, self.base + self.window_size):
             i %= self.total_packets
             if self.packets[i].is_not_send() and self.packets[i].data_is_not_null():
@@ -153,12 +152,8 @@ class SelectiveRepeat():
             for _ in range(self.window_size):
                 socket.settimeout(TIMEOUT_SECONDS)  # Establecer un tiempo de espera para el paquete (5 segundos)
                 data_chunk = socket.recv(STD_PACKET_SIZE + 5)
-                self.last_packet_time = time.time() 
-                logger.info(f"Packet of {len(data_chunk)} bytes received.")
-                
+                self.last_packet_time = time.time()
                 self.next_sqn = int(data_chunk[0:4].decode())
-                logger.info(f"Packet {self.next_sqn} received.")
-
                 if self.next_sqn_in_window(logger):
                     if len(data_chunk) == 5 and data_chunk.decode().endswith(str(ACK_FIN)):
                         sqn_to_send = "0" * (SEQN_LENGTH - len(str(self.next_sqn))) + str(self.next_sqn)
@@ -235,10 +230,8 @@ class SelectiveRepeat():
         end = (self.base + self.window_size) % self.total_packets
 
         if end > self.base and self.base <= self.next_sqn < end:
-            logger.info(f"next_sqn_in_window return true for next_sqn : {self.next_sqn} - base : {self.base}")
             return True
         elif end < self.base and (0 <= self.next_sqn < end or self.base <= self.next_sqn < self.total_packets):
-            logger.info(f"next_sqn_in_window return true for next_sqn : {self.next_sqn} - base : {self.base}")
             return True
 
         logger.info(f"next_sqn_in_window return FALSE for next_sqn : {self.next_sqn} - base : {self.base}")
@@ -246,8 +239,6 @@ class SelectiveRepeat():
 
 
     def evaluate_packet_timeouts(self, socket, host, port, logger):
-        logger.info("start evaluate_packet_timeouts")
-    
         try:
             for i in range(self.base, self.base + self.window_size):
                 i %= self.total_packets  # Wrap around if index exceeds total_packets
@@ -255,8 +246,6 @@ class SelectiveRepeat():
                     logger.info(f"Packet {i} timed out. Resending...")
                     socket.sendto(self.packets[i].get_data(), (host, port))
                     self.packets[i].set_wait_ack()
-
-            #time.sleep(1)  # Adjust sleep duration as needed
         except Exception as e:
             if str(e) == "MAX TIMEOUTS REACHED":
                 raise e
@@ -286,7 +275,6 @@ class SelectiveRepeat():
         return False
 
     def end(self, socket, host, port, logger):
-        logger.error(f"start end for sqn: {self.next_sqn}")
         sqn_to_send = "0" * (SEQN_LENGTH - len(str(self.next_sqn))) + str(self.next_sqn)
         end_chunk = f"{sqn_to_send}{ACK_FIN}"
         self.packets[self.next_sqn].set_data(end_chunk.encode())
@@ -302,4 +290,3 @@ class SelectiveRepeat():
     def print_packets(self, logger):
         for x in range(0, self.total_packets):
             logger.info(f"packet {x} : {self.packets[x].print()}")
-
