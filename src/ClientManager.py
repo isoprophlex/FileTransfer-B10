@@ -70,7 +70,7 @@ class ClientManager:
                 if start_message.get_operation_type() == UPLOAD & int(filesize) > MAX_FILE_SIZE:
                     socket.sendto(MAX_FILE_REACHED.encode(), self.client_address)
                     self.logger.error("File too big")
-                    return False7
+                    return False
 
             self.socket.sendto(str(ACK_SYN).encode(), (self.client_address[0], int(self.client_address[1])))
             return (

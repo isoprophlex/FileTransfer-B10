@@ -9,7 +9,7 @@ from FileReader import *
 
 class StopAndWait():
     def __init__(self):
-        self.TIMEOUT_SECONDS = 3
+        self.TIMEOUT_SECONDS = 5
         self.MAX_TIMEOUTS = 3
         self.exception_exit = False
 
@@ -45,6 +45,10 @@ class StopAndWait():
                     amount_timeouts = 0
                     previous_sqn = actual_sqn
                     actual_sqn += 1
+                    if actual_sqn == 9999:
+                        previous_sqn = -1
+                        actual_sqn = 0
+
 
         except:
             logger.error("Error durante la transmisión")
@@ -112,8 +116,9 @@ class StopAndWait():
                     logger.error("Error writing file")
                     break
                 previous_chunk = data_chunk
-                previous_seqn = seq_n
                 seq_n += 1
+            if seq_n == 9999:
+                seq_n = 0000
         logger.warning("Finalizado download")
         socket.close()
         return self.exception_exit
