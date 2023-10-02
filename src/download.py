@@ -110,13 +110,13 @@ def download(args):
 
         if args.SELECT_REPEAT is True:
             download_type = SelectiveRepeat()
-            logger.info("Se usará el protocolo Selective Repeat")
+            logger.info("Protocol chose: Selective Repeat")
         else:
             download_type = StopAndWait()
-            logger.info("Se usará el protocolo Stop&Wait")
+            logger.info("Protocol chose: Stop and Wait")
         download_type.download_file(client_socket, server_info[0], server_info[1], reader, 0, logger)
     except:
-        return
+        logger.error("Download failed.")
 
 
 def check_protocol(selected_repeat):

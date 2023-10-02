@@ -102,35 +102,39 @@ def handshake_upload(file_name, file_size, reader, client_socket, address, port,
 
 
 def upload(args):
-    logger = get_logger(args.verbose, args.quiet)
-    print("Press q to quit: ")
-    client_socket = socket(AF_INET, SOCK_DGRAM)
+    try:
+        logger = get_logger(args.verbose, args.quiet)
+        print("Press q to quit: ")
+        client_socket = socket(AF_INET, SOCK_DGRAM)
 
-    file_name = f"{args.FILEPATH}/{args.FILENAME}"
-    logger.warning("Client ready to upload a file")
+        file_name = f"{args.FILEPATH}/{args.FILENAME}"
+        logger.warning("Client ready to upload a file")
 
-    reader = FileReader(file_name)
+        reader = FileReader(file_name)
 
-    file_size = reader.get_file_size()
+        file_size = reader.get_file_size()
 
-    if file_size > MAX_FILE_SIZE:
-        logger.error("File too big")
-        return
+        if file_size > MAX_FILE_SIZE:
+            logger.error("File too big")
+            return
 
-    result, server_info = handshake_upload(
-        file_name, file_size, reader, client_socket, args.ADDR, args.PORT, check_protocol(args.SELECT_REPEAT), logger
-    )
+        result, server_info = handshake_upload(
+            file_name, file_size, reader, client_socket, args.ADDR, args.PORT, check_protocol(args.SELECT_REPEAT),
+            logger
+        )
 
-    if result is False:
-        return
+        if result is False:
+            return
 
-    if args.SELECT_REPEAT is True:
-        upload_type = SelectiveRepeat()
-        logger.info("Se usará el protocolo Selective Repeat")
-    else:
-        upload_type = StopAndWait()
-        logger.info("Se usará el protocolo Stop&Wait")
-    upload_type.upload_file(client_socket, server_info[0], server_info[1], reader, logger)
+        if args.SELECT_REPEAT is True:
+            upload_type = SelectiveRepeat()
+            logger.info("Se usará el protocolo Selective Repeat")
+        else:
+            upload_type = StopAndWait()
+            logger.info("Se usará el protocolo Stop&Wait")
+        upload_type.upload_file(client_socket, server_info[0], server_info[1], reader, logger)
+    except:
+        logger.error("Upload failed")
 
 
 def check_protocol(selected_repeat):

@@ -37,7 +37,7 @@ class FileReader(object):
             self.file = "File closed"
             aux.close()
         elif self.file and self.file != "File closed" and exc_exit:
-            os.remove(self.file)
+            os.remove(self.file_name)
             self.file = "File closed"
 
     def is_closed(self):

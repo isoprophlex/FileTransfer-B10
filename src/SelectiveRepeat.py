@@ -62,7 +62,7 @@ class SRPacket():
 
 class SelectiveRepeat():
     def __init__(self):
-        self.TIMEOUT_SECONDS = 1
+        self.TIMEOUT_SECONDS = 0.025
         self.MAX_TIMEOUTS = 10
         self.last_packet_time = time.time()
         self.window_size = 20  # Adjust the window size
@@ -75,6 +75,7 @@ class SelectiveRepeat():
         self.exception_exit = False
 
     def upload_file(self, socket, host, port, reader, logger):
+        start_time = time.time()
         bytes_read = ""
         bytes_count = 0
         size = reader.get_file_size()
@@ -106,6 +107,7 @@ class SelectiveRepeat():
             self.exception_exit = True
         finally:
             socket.close()
+            logger.error(f"{time.time() - start_time}")
         return self.exception_exit
 
     def download_file(self, socket, host, port, writer, seq_n, logger):
@@ -121,6 +123,8 @@ class SelectiveRepeat():
                         self.last_sqn_writed +=1
                         if self.last_sqn_writed == self.total_packets-1:
                             self.last_sqn_writed = -1
+                    else:
+                        break
                 self.update_recieve_based()
                 logger.info(f"new base : {self.base}")
             logger.info("Download done")
