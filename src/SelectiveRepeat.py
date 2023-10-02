@@ -101,6 +101,10 @@ class SelectiveRepeat():
                 # Esperar el ACK del servidor
                 self.try_receive_ack(socket, logger)
                 self.evaluate_packet_timeouts(socket, host, port, logger)
+                    
+                current_time = time.time()
+                if current_time - self.last_packet_time > MAX_TIME_WITHOUT_PACK:
+                    raise Exception("Timeout expired, no packets send in a log time.")
             self.end(socket, host, port, logger)
         except Exception as e:
             logger.error(f"Error during transmission: {e}")
@@ -142,6 +146,7 @@ class SelectiveRepeat():
             if self.packets[i].is_not_send() and self.packets[i].data_is_not_null():
                 try:
                     socket.sendto(self.packets[i].get_data(), (host, port))
+                    self.last_packet_time = time.time()
                     logger.info(f"Sending {len(self.packets[i].get_data())} bytes.")
                     self.packets[i].set_wait_ack()
                 except Exception as e:
@@ -245,6 +250,7 @@ class SelectiveRepeat():
                 if self.packets[i].is_wait_ack() and self.packets[i].has_timed_out():
                     logger.info(f"Packet {i} timed out. Resending...")
                     socket.sendto(self.packets[i].get_data(), (host, port))
+                    self.last_packet_time = time.time()
                     self.packets[i].set_wait_ack()
         except Exception as e:
             if str(e) == "MAX TIMEOUTS REACHED":
