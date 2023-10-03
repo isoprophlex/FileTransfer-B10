@@ -117,9 +117,9 @@ class SelectiveRepeat():
             self.exception_exit = True
         finally:
             socket.close()
-            logger.error(f"{time.time() - start_time}")
+            logger.info(f"Time: {time.time() - start_time}")
         if not self.exception_exit:
-            logger.info("Download done.")
+            logger.error("Upload completed successfully.")
         return self.exception_exit
 
     def download_file(self, socket, host, port, writer, seq_n, logger):
@@ -141,10 +141,10 @@ class SelectiveRepeat():
             self.exception_exit = True
             logger.error(f"Error during download: {e}")
         finally:
-            logger.error(f"{time.time() - start_time}")
+            logger.debug(f"Time: {time.time() - start_time}")
             socket.close()
         if not self.exception_exit:
-            logger.info("Download done")
+            logger.error("Download done successfully")
         return self.exception_exit
 
     # Additional methods specific to Selective Repeat protocol
@@ -204,7 +204,6 @@ class SelectiveRepeat():
                 logger.error(f"Error sending ACK - {e}")
 
     def try_receive_ack(self, socket, logger):
-        logger.info("start try_receive_ack")
         it = 0
         while True:
             try:
@@ -228,12 +227,11 @@ class SelectiveRepeat():
                         else:
                             break
             except timeout:
-                logger.info("not more ACK in window")
+                logger.info("Warning: No more ACK in window")
                 break
             except Exception as e:
-                logger.error(f"error in try_receive_ack base: {self.base} - error : {e}")
+                logger.error(f"ERROR: in try_receive_ack base: {self.base} - error : {e}")
                 raise e
-
 
     def next_sqn_in_window(self, logger):
         end = (self.base + self.window_size) % self.total_packets
@@ -242,8 +240,6 @@ class SelectiveRepeat():
             return True
         elif end < self.base and (0 <= self.next_sqn < end or self.base <= self.next_sqn < self.total_packets):
             return True
-
-        logger.info(f"next_sqn_in_window return FALSE for next_sqn : {self.next_sqn} - base : {self.base}")
         return False
 
     def evaluate_packet_timeouts(self, socket, host, port, logger):
@@ -259,8 +255,6 @@ class SelectiveRepeat():
             if str(e) == "MAX TIMEOUTS REACHED":
                 raise e
             logger.error(f"Error in evaluate_packet_timeouts: {e}")
-
-        logger.info("end evaluate_packet_timeouts")
 
     def update_recieve_based(self):
         while True:

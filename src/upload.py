@@ -119,14 +119,15 @@ def upload(args):
 
         if result is False:
             return
-
+        logger.error("Upload has just started!")
         if args.SELECT_REPEAT is True:
             upload_type = SelectiveRepeat()
             logger.info("Se usará el protocolo Selective Repeat")
         else:
             upload_type = StopAndWait()
             logger.info("Se usará el protocolo Stop&Wait")
-        upload_type.upload_file(client_socket, server_info[0], server_info[1], reader, logger)
+        code = upload_type.upload_file(client_socket, server_info[0], server_info[1], reader, logger)
+        reader.close_file(code)
     except:
         logger.error("Upload failed")
 

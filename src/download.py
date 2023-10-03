@@ -86,6 +86,7 @@ def handshake_download(file_name, reader, client_socket, address, port, sel_repe
                 pass
             return False, None
         if decoded_buffer == str(ACK):
+            logger.error("Download has just started")
             return True, server_data
 
         current_time = time.time()
@@ -112,7 +113,8 @@ def download(args):
         else:
             download_type = StopAndWait()
             logger.info("Protocol chose: Stop and Wait")
-        download_type.download_file(client_socket, server_info[0], server_info[1], reader, 0, logger)
+        code = download_type.download_file(client_socket, server_info[0], server_info[1], reader, 0, logger)
+        reader.close_file(code)
     except:
         logger.error("Download failed.")
 

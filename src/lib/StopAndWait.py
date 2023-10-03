@@ -40,6 +40,7 @@ class StopAndWait():
                     if amount_timeouts == self.MAX_TIMEOUTS:
                         logger.error(
                             f"Maximum amount of timeouts reached: ({self.MAX_TIMEOUTS}). Closing connection.")
+                        self.exception_exit = True
                         break
                     previous_sqn = actual_sqn
                 else:
@@ -49,16 +50,13 @@ class StopAndWait():
                     if actual_sqn == 9999:
                         previous_sqn = -1
                         actual_sqn = 0
-
-
         except:
-            logger.error("Error durante la transmisión")
-            return False
+            logger.error("Error during transmission")
 
         finally:
-            logger.debug("Upload completed")
-
+            logger.error("File uploaded successfully")
             socket.close()
+        return self.exception_exit
 
     def send_packet(self, socket, host, port, data, logger):
         try:
@@ -98,7 +96,6 @@ class StopAndWait():
             if len(data_chunk) == 5 and data_chunk.decode().endswith("6"):
                 sqn_to_send = "0" * (SEQN_LENGTH - len(str(seq_n))) + str(seq_n)
                 self.send_ack(socket, host, port, sqn_to_send, logger, True)
-                logger.info("Upload done succesfully!")
                 break
             if data_chunk is None:
                 amount_timeouts += 1
@@ -121,9 +118,10 @@ class StopAndWait():
                 seq_n += 1
             if seq_n == 9999:
                 seq_n = 0000
-        logger.warning("Finalizado download")
+        if not self.exception_exit:
+            logger.error("File downloaded successfully")
         socket.close()
-        logger.error(f"{time.time() - start_time}")
+        logger.info(f"Time: {time.time() - start_time}")
         return self.exception_exit
 
     def receive_packet(self, socket, logger):

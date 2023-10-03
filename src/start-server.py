@@ -53,7 +53,7 @@ def start_server(args):
     logger = get_logger(args.verbose, args.quiet)
     server_socket = socket(AF_INET, SOCK_DGRAM)
     server_socket.bind((args.ADDR, args.PORT))
-    logger.info("Server started...")
+    logger.critical("Server started...")
     threads = []
     connections = []
     exit_thread = threading.Thread(
@@ -64,7 +64,7 @@ def start_server(args):
     while True:
         try:
             if not exit_thread.is_alive():
-                logger.info("Cerrando servidor")
+                logger.info("Closing server...")
                 break
             try:
                 client_data, client_address = server_socket.recvfrom(BUFFER_SIZE)
@@ -81,7 +81,7 @@ def start_server(args):
             threads = new_thread_list
             if len(threads) >= MAX_CLIENTS_CONNECTED:
                 logger.info(
-                    "Se alcanzó el máximo de clientes conectados al mismo tiempo"
+                    "Max. amount of clients simultaneously reached"
                 )
                 continue
 
