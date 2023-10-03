@@ -6,11 +6,6 @@
 > pip install -r python3
 
 ```
-Si se desea usar colores en los mensajes:
-```
-> pip install colorlog
-
-```
 ## Para levantar el servidor
 
 ```
