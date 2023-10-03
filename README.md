@@ -60,3 +60,20 @@ Por ejemplo:
 > python3 download.py -H localhost -p 12000 -d destination -n cancion.mp3 -sr True
 > python3 download.py -H localhost -p 12000 -d destination -n cancion.mp3 -sr False
 ```
+# Para ajustar la perdida de paquetes
+```
+$ comcast --packet_loss=10%
+
+Alternativamente:
+
+$ iptables -A INPUT -m statistic --mode random --probability 0.1 -j DROP
+$ iptables -A OUTPUT -m statistic --mode random --probability 0.1 -j DROP
+```
+# Para reiniciar la perdida de paquetes
+```
+$ comcast --stop
+
+Si se uso el metodo alternativo:
+
+$ tc qdisc del dev eth0 root netem
+```
