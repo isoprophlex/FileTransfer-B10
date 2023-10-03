@@ -91,7 +91,7 @@ class ACK(Message):
 
 class Protocol:
     def message_from_bytes(bytes):
-        
+
         seq_num = int(bytes[0:4])
         type = int(bytes[4:5])
 

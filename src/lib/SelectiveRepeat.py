@@ -1,6 +1,10 @@
 from socket import socket, timeout
-from constants import *
-from FileReader import *
+from src.lib.FileReader import *
+from src.lib.FileReader import *
+from src.lib.FileReader import *
+from src.lib.FileReader import *
+from src.lib.constants import *
+from src.lib.FileReader import *
 import time
 
 NOT_SEND = 0
@@ -117,6 +121,7 @@ class SelectiveRepeat():
         return self.exception_exit
 
     def download_file(self, socket, host, port, writer, seq_n, logger):
+        start_time = time.time()
         try:
             while self.alive:
                 self.try_receive_window(socket, host, port, logger)
@@ -138,6 +143,7 @@ class SelectiveRepeat():
             self.exception_exit = True
             logger.error(f"Error during download: {e}")
         finally:
+            logger.error(f"{time.time() - start_time}")
             socket.close()
         return self.exception_exit
 

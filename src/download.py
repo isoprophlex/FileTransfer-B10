@@ -1,12 +1,9 @@
 import argparse
-import time
 
-from FileReader import *
 from socket import *
-from constants import *
-from StopAndWait import *
-from SelectiveRepeat import *
-from utils import *
+from src.lib.StopAndWait import *
+from src.lib.SelectiveRepeat import *
+from src.lib.utils import *
 
 
 def str2bool(v):

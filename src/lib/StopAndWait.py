@@ -1,10 +1,10 @@
 from random import randint
 import socket
 from socket import socket, timeout
-from time import sleep
+import time
 
-from constants import *
-from FileReader import *
+from src.lib.constants import *
+from src.lib.FileReader import *
 
 
 class StopAndWait():
@@ -18,6 +18,7 @@ class StopAndWait():
         actual_sqn = 0
         previous_sqn = -1
         bytes_read = ""
+
         try:
             while True:
                 sqn_to_send = "0" * (SEQN_LENGTH - len(str(actual_sqn))) + str(actual_sqn)
@@ -56,6 +57,7 @@ class StopAndWait():
 
         finally:
             logger.debug("Upload completed")
+
             socket.close()
 
 
@@ -78,6 +80,7 @@ class StopAndWait():
     def download_file(self, socket, host, port, writer, seq_n, logger):
         amount_timeouts = 0
         previous_chunk = ""
+        start_time = time.time()
         while True:
             try:
                 data_chunk = self.receive_packet(socket, logger)
@@ -121,6 +124,7 @@ class StopAndWait():
                 seq_n = 0000
         logger.warning("Finalizado download")
         socket.close()
+        logger.error(f"{time.time() - start_time}")
         return self.exception_exit
     def receive_packet(self, socket, logger):
         try:

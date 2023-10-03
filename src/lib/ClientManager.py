@@ -1,12 +1,12 @@
 import threading
 from socket import *
-from FileReader import FileReader
+from src.lib.FileReader import FileReader
 # Habría que importar Selective Repeat y Stop and Wait
-from utils import *
-from Protocol import Protocol
-from constants import *
-from StopAndWait import *
-from SelectiveRepeat import *
+from src.lib.utils import *
+from src.lib.Protocol import Protocol
+from src.lib.constants import *
+from src.lib.StopAndWait import *
+from src.lib.SelectiveRepeat import *
 
 
 class ClientManager:
