@@ -1,9 +1,9 @@
 import argparse
 
 from socket import *
-from src.lib.StopAndWait import *
-from src.lib.SelectiveRepeat import *
-from src.lib.utils import *
+from lib.StopAndWait import *
+from lib.SelectiveRepeat import *
+from lib.utils import *
 
 
 def str2bool(v):
@@ -40,7 +40,7 @@ def get_args() -> argparse.Namespace:
                         dest="FILENAME", required=True, help="file name",
                         action="store", type=str)
     parser.add_argument("-sr", "--sel_repeat", dest="SELECT_REPEAT",
-                        required=True, help="protocol", action="store", 
+                        required=True, help="protocol", action="store",
                         type=str2bool)
     return parser.parse_args()
 

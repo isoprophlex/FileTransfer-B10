@@ -1,6 +1,6 @@
 import argparse
 # from signal import SIGKILL
-from src.lib.ClientManager import *
+from lib.ClientManager import *
 
 
 def get_args() -> argparse.Namespace:

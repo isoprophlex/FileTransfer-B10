@@ -1,9 +1,9 @@
 import argparse
 
 from socket import SOCK_DGRAM, AF_INET
-from src.lib.StopAndWait import *
-from src.lib.SelectiveRepeat import *
-from src.lib.utils import *
+from lib.StopAndWait import *
+from lib.SelectiveRepeat import *
+from lib.utils import *
 
 
 def str2bool(v):
