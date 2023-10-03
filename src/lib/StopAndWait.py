@@ -60,7 +60,6 @@ class StopAndWait():
 
             socket.close()
 
-
     def send_packet(self, socket, host, port, data, logger):
         try:
             socket.sendto(data, (host, port))
@@ -105,7 +104,7 @@ class StopAndWait():
                 amount_timeouts += 1
                 logger.error(f"Timeout number {amount_timeouts}!")
                 if amount_timeouts >= self.MAX_TIMEOUTS:
-                    self.exception_exit = False
+                    self.exception_exit = True
                     logger.error(f"Maximum amount of timeouts reached: ({MAX_TIMEOUTS}). Closing connection.")
                     break
             elif data_chunk != previous_chunk:
@@ -126,6 +125,7 @@ class StopAndWait():
         socket.close()
         logger.error(f"{time.time() - start_time}")
         return self.exception_exit
+
     def receive_packet(self, socket, logger):
         try:
             socket.settimeout(self.TIMEOUT_SECONDS)  # Establecer un tiempo de espera para el paquete (5 segundos)

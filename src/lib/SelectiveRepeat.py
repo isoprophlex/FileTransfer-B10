@@ -106,7 +106,7 @@ class SelectiveRepeat():
                 # Esperar el ACK del servidor
                 self.try_receive_ack(socket, logger)
                 self.evaluate_packet_timeouts(socket, host, port, logger)
-                
+
                 current_time = time.time()
                 if current_time - self.last_packet_time > MAX_TIME_WITHOUT_PACK:
                     raise Exception("Timeout expired, no packets send.")
@@ -118,6 +118,8 @@ class SelectiveRepeat():
         finally:
             socket.close()
             logger.error(f"{time.time() - start_time}")
+        if not self.exception_exit:
+            logger.info("Download done.")
         return self.exception_exit
 
     def download_file(self, socket, host, port, writer, seq_n, logger):
@@ -127,9 +129,7 @@ class SelectiveRepeat():
                 self.try_receive_window(socket, host, port, logger)
                 for i in range(self.base, self.base + self.window_size):
                     i = i % self.total_packets
-                    logger.info(f"iteration {i}")
                     if i == self.last_sqn_writed + 1 and self.packets[i].data_is_not_null():
-                        logger.info(f"writting {i}")
                         writer.write_file(self.packets[i].get_data())
                         self.last_sqn_writed += 1
                         if self.last_sqn_writed == self.total_packets - 1:
@@ -137,14 +137,14 @@ class SelectiveRepeat():
                     else:
                         break
                 self.update_recieve_based()
-                logger.info(f"new base : {self.base}")
-            logger.info("Download done")
         except Exception as e:
             self.exception_exit = True
             logger.error(f"Error during download: {e}")
         finally:
             logger.error(f"{time.time() - start_time}")
             socket.close()
+        if not self.exception_exit:
+            logger.info("Download done")
         return self.exception_exit
 
     # Additional methods specific to Selective Repeat protocol
@@ -179,8 +179,6 @@ class SelectiveRepeat():
 
                     self.packets[self.next_sqn].set_data(data_chunk[SEQN_LENGTH:])
                     self.packets[self.next_sqn].set_already_ack()
-
-
         except timeout:
             logger.info("Error receiving packet - timeout")
             current_time = time.time()
@@ -236,7 +234,6 @@ class SelectiveRepeat():
                 logger.error(f"error in try_receive_ack base: {self.base} - error : {e}")
                 raise e
 
-        logger.info("end try_receive_ack")
 
     def next_sqn_in_window(self, logger):
         end = (self.base + self.window_size) % self.total_packets
