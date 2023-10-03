@@ -51,7 +51,6 @@ def is_finishing(socket, threads, connections):
 
 def start_server(args):
     logger = get_logger(args.verbose, args.quiet)
-    logger.setLevel(args.verbose)
     server_socket = socket(AF_INET, SOCK_DGRAM)
     server_socket.bind((args.ADDR, args.PORT))
     logger.info("Server started...")
